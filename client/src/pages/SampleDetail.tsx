@@ -145,6 +145,7 @@ export default function SampleDetail() {
   }
 
   const categoryName = getCategoryName(sample.categoryId ?? 1);
+  const isTrendy = sample.line === '트랜디';
 
   // 컬렉션 탭에 표시할 제품 목록
   const collectionTabProducts: Record<string, typeof categoryAll> = {
