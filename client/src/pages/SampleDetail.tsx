@@ -55,6 +55,9 @@ export default function SampleDetail() {
   const displayThumb = thumbSrc ?? sample?.image ?? '';
   const displayOrig  = origSrc  ?? sample?.image ?? '';
 
+  // 이미지가 없는 경우 (placeholder)
+  const hasNoImage = !thumbSrc && (!sample?.image || sample.image === '');
+
   // 파일 처리 공통 함수
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -113,6 +116,7 @@ export default function SampleDetail() {
 
   const categoryName = getCategoryName(sample.categoryId ?? 1);
   const hasCustomImage = !!thumbSrc;
+  const isTrendy = sample.line === '트랜디';
 
   return (
     <div className="min-h-screen bg-background">
@@ -171,53 +175,76 @@ export default function SampleDetail() {
                 className={cn(
                   'aspect-square rounded-xl overflow-hidden bg-muted relative group shadow-md transition-all',
                   isDragOver ? 'ring-4 ring-blue-400 ring-offset-2 scale-[1.01]' : '',
-                  isUploading ? 'cursor-wait' : 'cursor-zoom-in'
+                  isUploading ? 'cursor-wait' : hasNoImage ? 'cursor-pointer' : 'cursor-zoom-in'
                 )}
-                onClick={() => !isUploading && setIsImageExpanded(true)}
+                onClick={() => {
+                  if (isUploading) return;
+                  if (hasNoImage) {
+                    fileInputRef.current?.click();
+                  } else {
+                    setIsImageExpanded(true);
+                  }
+                }}
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleDrop}
               >
-                {/* 이미지 */}
-                <img
-                  src={displayThumb}
-                  alt={sample.name}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-
-                {/* 업로드 중 오버레이 */}
-                {isUploading && (
-                  <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
-                    <Loader2 className="w-10 h-10 text-white animate-spin" />
-                    <span className="text-white text-sm font-medium">이미지 처리 중...</span>
+                {/* 이미지 없을 때 Placeholder */}
+                {hasNoImage ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gray-50 border-2 border-dashed border-gray-300">
+                    <ImagePlus className="w-12 h-12 text-gray-300" />
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-gray-500">이미지를 업로드하세요</p>
+                      <p className="text-xs text-gray-400 mt-1">클릭하거나 드래그&드롭</p>
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/30 text-white text-xs font-mono px-2 py-1 rounded">
+                      {sample.productNo}
+                    </div>
                   </div>
-                )}
+                ) : (
+                  <>
+                    {/* 이미지 */}
+                    <img
+                      src={displayThumb}
+                      alt={sample.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
 
-                {/* 드래그 오버 오버레이 */}
-                {isDragOver && !isUploading && (
-                  <div className="absolute inset-0 bg-blue-500/40 flex flex-col items-center justify-center gap-2 pointer-events-none">
-                    <ImagePlus className="w-12 h-12 text-white drop-shadow-lg" />
-                    <span className="text-white text-sm font-semibold">이미지를 놓으세요</span>
-                  </div>
-                )}
+                    {/* 업로드 중 오버레이 */}
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="w-10 h-10 text-white animate-spin" />
+                        <span className="text-white text-sm font-medium">이미지 처리 중...</span>
+                      </div>
+                    )}
 
-                {/* 호버 시 줌 아이콘 */}
-                {!isUploading && !isDragOver && (
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
-                    <ZoomIn className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
-                  </div>
-                )}
+                    {/* 드래그 오버 오버레이 */}
+                    {isDragOver && !isUploading && (
+                      <div className="absolute inset-0 bg-blue-500/40 flex flex-col items-center justify-center gap-2 pointer-events-none">
+                        <ImagePlus className="w-12 h-12 text-white drop-shadow-lg" />
+                        <span className="text-white text-sm font-semibold">이미지를 놓으세요</span>
+                      </div>
+                    )}
 
-                {/* 품번 오버레이 */}
-                <div className="absolute bottom-3 left-3 bg-black/50 text-white text-xs font-mono px-2 py-1 rounded">
-                  {sample.productNo}
-                </div>
+                    {/* 호버 시 줌 아이콘 */}
+                    {!isUploading && !isDragOver && (
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
+                        <ZoomIn className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                      </div>
+                    )}
 
-                {/* 사용자 업로드 배지 */}
-                {hasCustomImage && (
-                  <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-medium shadow">
-                    사용자 이미지
-                  </div>
+                    {/* 품번 오버레이 */}
+                    <div className="absolute bottom-3 left-3 bg-black/50 text-white text-xs font-mono px-2 py-1 rounded">
+                      {sample.productNo}
+                    </div>
+
+                    {/* 사용자 업로드 배지 */}
+                    {hasCustomImage && (
+                      <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-medium shadow">
+                        사용자 이미지
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -241,8 +268,12 @@ export default function SampleDetail() {
                 </Button>
 
                 {/* 다운로드 버튼 */}
-                <a href={displayOrig} download={`${sample.productNo}.jpg`} className="w-full">
-                  <Button variant="outline" size="sm" className="gap-1.5 w-full">
+                <a
+                  href={hasNoImage ? undefined : displayOrig}
+                  download={hasNoImage ? undefined : `${sample.productNo}.jpg`}
+                  className={cn('w-full', hasNoImage && 'pointer-events-none opacity-40')}
+                >
+                  <Button variant="outline" size="sm" className="gap-1.5 w-full" disabled={hasNoImage}>
                     <Download className="w-3.5 h-3.5" />
                     다운로드
                   </Button>
@@ -264,7 +295,7 @@ export default function SampleDetail() {
 
               {/* 안내 텍스트 */}
               <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                이미지를 드래그&드롭하거나 버튼을 클릭하여 교체할 수 있습니다.<br />
+                이미지를 드래그&드롭하거나 버튼을 클릭하여 업로드할 수 있습니다.<br />
                 카드용 이미지는 자동으로 400×400으로 조정됩니다.
               </p>
 
@@ -310,11 +341,13 @@ export default function SampleDetail() {
               {linemates.length > 1 && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2 font-medium">
-                    {sample.line} 컬렉션 ({linemates.length}종)
+                    {sample.collectionName ?? sample.line} 컬렉션 ({linemates.length}종)
                   </p>
                   <div className="grid grid-cols-4 gap-1.5">
                     {linemates.map((s) => {
                       const storedThumb = getStoredThumb(s.id);
+                      const thumbToShow = storedThumb ?? s.image;
+                      const noImg = !storedThumb && (!s.image || s.image === '');
                       return (
                         <div
                           key={s.id}
@@ -325,13 +358,19 @@ export default function SampleDetail() {
                               ? 'border-blue-500 shadow-md scale-105'
                               : 'border-transparent hover:border-gray-300'
                           )}
-                          title={s.name}
+                          title={s.productNo}
                         >
-                          <img
-                            src={storedThumb ?? s.image}
-                            alt={s.name}
-                            className="w-full h-full object-cover"
-                          />
+                          {noImg ? (
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                              <ImagePlus className="w-4 h-4 text-gray-300" />
+                            </div>
+                          ) : (
+                            <img
+                              src={thumbToShow}
+                              alt={s.name}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                         </div>
                       );
                     })}
@@ -348,6 +387,11 @@ export default function SampleDetail() {
                 <Badge>{categoryName}</Badge>
                 <Badge variant="secondary">{sample.brand}</Badge>
                 <Badge variant="outline">{sample.line}</Badge>
+                {sample.materialType && (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    {sample.materialType}
+                  </Badge>
+                )}
                 {sample.specs.map((spec) => (
                   <Badge key={spec} variant="outline" className="text-xs bg-gray-50">
                     {spec}
@@ -356,6 +400,11 @@ export default function SampleDetail() {
               </div>
               <h1 className="text-3xl font-bold text-foreground mb-1">{sample.name}</h1>
               <p className="text-base text-muted-foreground font-mono">{sample.productNo}</p>
+              {sample.collectionName && sample.collectionName !== sample.line && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  컬렉션: <span className="font-medium text-foreground">{sample.collectionName}</span>
+                </p>
+              )}
             </div>
 
             <Tabs defaultValue="specs" className="w-full">
@@ -377,7 +426,7 @@ export default function SampleDetail() {
                       </div>
                       <div className="border-b border-border pb-3">
                         <p className="text-sm text-muted-foreground font-medium mb-1">컬렉션</p>
-                        <p className="font-semibold">{sample.line}</p>
+                        <p className="font-semibold">{sample.collectionName ?? sample.line}</p>
                       </div>
                       <div className="border-b border-border pb-3">
                         <p className="text-sm text-muted-foreground font-medium mb-1">품번</p>
@@ -386,6 +435,16 @@ export default function SampleDetail() {
                       <div className="border-b border-border pb-3">
                         <p className="text-sm text-muted-foreground font-medium mb-1">공정</p>
                         <p className="font-semibold">{categoryName}</p>
+                      </div>
+                      {sample.materialType && (
+                        <div className="border-b border-border pb-3">
+                          <p className="text-sm text-muted-foreground font-medium mb-1">재질</p>
+                          <p className="font-semibold">{sample.materialType}</p>
+                        </div>
+                      )}
+                      <div className="border-b border-border pb-3">
+                        <p className="text-sm text-muted-foreground font-medium mb-1">라인</p>
+                        <p className="font-semibold">{sample.line}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -408,12 +467,106 @@ export default function SampleDetail() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* 트랜디 공통 인증 정보 */}
+                {isTrendy && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">친환경 인증</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 gap-2">
+                          <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                            <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-green-800">환경표지 인증</p>
+                              <p className="text-xs text-green-600 mt-0.5">환경부 공식 환경표지 인증 제품</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                            <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-green-800">친환경 건축자재 인증</p>
+                              <p className="text-xs text-green-600 mt-0.5">친환경 건축자재 품질 인증 제품</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                            <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium text-green-800">8대 중금속 불검출</p>
+                              <p className="text-xs text-green-600 mt-0.5">납, 카드뮴, 크롬, 안티몬, 비소, 바륨, 셀레늄, 수은 전 항목 불검출</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="description" className="space-y-4">
                 <Card>
                   <CardContent className="pt-6">
-                    {sample.line === '프리모' ? (
+                    {isTrendy ? (
+                      <div className="space-y-5 text-foreground leading-relaxed">
+                        {/* 제품 설명 */}
+                        {sample.description ? (
+                          <div>
+                            <p className="font-semibold text-lg mb-2">
+                              {sample.collectionName ?? sample.line}
+                            </p>
+                            <p className="text-muted-foreground">{sample.description}</p>
+                          </div>
+                        ) : (
+                          <p>GNI개나리 트랜디 <strong>{sample.name}</strong> 제품입니다.</p>
+                        )}
+
+                        {/* 트랜디 공통 특징 */}
+                        <div className="border-t border-border pt-4 space-y-4">
+                          <p className="font-semibold text-base">트랜디 프리미엄 합지 특징</p>
+
+                          <div className="grid grid-cols-1 gap-3">
+                            <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+                              <p className="font-semibold text-emerald-800 mb-1">피톤치드 함유</p>
+                              <p className="text-sm text-emerald-700">
+                                피톤치드가 함유되어 있어 실내 유해 물질을 감소시켜 지친 몸과 마음을 회복시켜 줍니다.
+                                항균효과, 스트레스 완화, 집중력 향상, 진정작용의 효과가 있습니다.
+                              </p>
+                            </div>
+
+                            <div className="p-4 bg-sky-50 rounded-lg border border-sky-100">
+                              <p className="font-semibold text-sky-800 mb-1">수성잉크 인쇄</p>
+                              <p className="text-sm text-sky-700">
+                                합지제품에 수성잉크를 사용하여 만든 제품으로 발암물질 걱정없이 공간을 상쾌하게 합니다.
+                                믿고 선택할 수 있는 진정한 친환경 제품입니다.
+                              </p>
+                            </div>
+
+                            <div className="p-4 bg-purple-50 rounded-lg border border-purple-100">
+                              <p className="font-semibold text-purple-800 mb-1">오염방지 코팅</p>
+                              <p className="text-sm text-purple-700">
+                                항균코팅층이 적용되어 오염 방지 기능을 제공합니다.
+                                일상적인 오염에도 깨끗한 상태를 유지할 수 있습니다.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 구조층 */}
+                        <div className="border-t border-border pt-4">
+                          <p className="font-semibold text-base mb-3">제품 구조층</p>
+                          <div className="space-y-1.5">
+                            {['수성인쇄층', '항균코팅층', '종이층', '피톤치드층', '종이층'].map((layer, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+                                <span className="text-sm text-muted-foreground">{layer}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : sample.line === '프리모' ? (
                       <div className="space-y-4 text-foreground leading-relaxed">
                         <p className="font-semibold text-lg">차원이 다른 시공성</p>
                         <p>부직포 사용으로 업그레이드 된 시공성을 제공합니다. 프리모는 숨죽임 1시간 경과 후에도 벽지 폭의 변화가 적어 시공 후에도 이음 부위의 벌어짐과 이음 부위 표시가 잘 보이지 않습니다.</p>
@@ -438,7 +591,7 @@ export default function SampleDetail() {
       </div>
 
       {/* Image Zoom Modal — 원본 해상도 유지 */}
-      {isImageExpanded && (
+      {isImageExpanded && !hasNoImage && (
         <div
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           onClick={() => setIsImageExpanded(false)}
@@ -455,7 +608,6 @@ export default function SampleDetail() {
                 maxWidth: '95vw',
                 maxHeight: '90vh',
                 objectFit: 'contain',
-                /* 원본 해상도 유지: width/height를 강제하지 않음 */
               }}
               onClick={(e) => e.stopPropagation()}
             />

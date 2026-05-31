@@ -67,6 +67,9 @@ export interface Sample {
   name: string;
   brand: string;
   line: string;
+  materialType?: string;
+  collectionName?: string;
+  description?: string;
   specs: string[];
   image: string;
   categoryId?: number;
