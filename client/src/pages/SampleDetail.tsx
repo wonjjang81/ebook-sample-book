@@ -15,6 +15,19 @@ import {
   uploadProductImage, deleteProductImage
 } from '@/hooks/useProductImage';
 
+// 색상 계열 그룹핑 함수
+function getColorGroup(colorName: string): string {
+  const c = colorName.replace(/\s/g, '');
+  if (c.includes('그린')) return '그린 계열';
+  if (c.includes('골드')) return '골드 계열';
+  if (c.includes('블루')) return '블루 계열';
+  if (c.includes('그레이') || c.includes('쿨그레이')) return '그레이 계열';
+  if (c.includes('베이지') || c.includes('그레이지')) return '베이지 계열';
+  if (c.includes('아이보리')) return '아이보리 계열';
+  if (c.includes('화이트')) return '화이트 계열';
+  return '기타';
+}
+
 export default function SampleDetail() {
   const [, navigate] = useLocation();
   const [, params] = useRoute('/sample/:id');
@@ -23,8 +36,8 @@ export default function SampleDetail() {
   const [isImageExpanded, setIsImageExpanded] = useState(false);
   const [isProductSelected, setIsProductSelected] = useState(false);
   const [isProductLiked, setIsProductLiked] = useState(false);
+  const [collectionTab, setCollectionTab] = useState<'유사색상' | '패턴' | '천장'>('유사색상');
 
-  // 업로드된 이미지 상태 (null이면 기본 이미지 사용)
   const [thumbSrc, setThumbSrc] = useState<string | null>(null);
   const [origSrc, setOrigSrc] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -34,12 +47,19 @@ export default function SampleDetail() {
 
   const sample = findSampleById(sampleId);
 
-  // 페이지 로드 시 저장된 이미지 불러오기
   useEffect(() => {
     if (!sampleId) return;
     setThumbSrc(getStoredThumb(sampleId));
     setOrigSrc(getStoredOrig(sampleId));
   }, [sampleId]);
+
+  // 현재 제품의 collectionCategory에 맞게 기본 탭 설정
+  useEffect(() => {
+    if (sample?.collectionCategory) {
+      const cat = sample.collectionCategory as '유사색상' | '패턴' | '천장';
+      setCollectionTab(cat);
+    }
+  }, [sample]);
 
   // 같은 라인의 인접 제품 (이전/다음 탐색)
   const linemates = sample
@@ -49,16 +69,27 @@ export default function SampleDetail() {
   const prevSample = currentIdx > 0 ? linemates[currentIdx - 1] : null;
   const nextSample = currentIdx < linemates.length - 1 ? linemates[currentIdx + 1] : null;
 
+  // 컬렉션 탭별 제품 목록 (트랜디 라인 전체에서 분류)
+  const trendyAll = ALL_SAMPLES.filter(
+    (s) => s.line === '트랜디' && s.categoryId === (sample?.categoryId ?? 1)
+  );
+
+  // 유사색상: 같은 colorGroup 제품들
+  const currentColorGroup = sample?.colorGroup ?? getColorGroup(sample?.color ?? '');
+  const similarColorProducts = trendyAll.filter(
+    (s) => s.collectionCategory === '유사색상' &&
+      (s.colorGroup ?? getColorGroup(s.color ?? '')) === currentColorGroup
+  );
+  const patternProducts = trendyAll.filter((s) => s.collectionCategory === '패턴');
+  const ceilingProducts = trendyAll.filter((s) => s.collectionCategory === '천장');
+
   const handleGoBack = () => navigate('/');
 
-  // 실제 표시할 이미지 소스
   const displayThumb = thumbSrc ?? sample?.image ?? '';
   const displayOrig  = origSrc  ?? sample?.image ?? '';
-
-  // 이미지가 없는 경우 (placeholder)
   const hasNoImage = !thumbSrc && (!sample?.image || sample.image === '');
+  const hasCustomImage = !!thumbSrc;
 
-  // 파일 처리 공통 함수
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setUploadError('이미지 파일만 업로드할 수 있습니다.');
@@ -74,7 +105,7 @@ export default function SampleDetail() {
       const { thumb, orig } = await uploadProductImage(sampleId, file);
       setThumbSrc(thumb);
       setOrigSrc(orig);
-    } catch (e) {
+    } catch {
       setUploadError('이미지 저장 중 오류가 발생했습니다.');
     } finally {
       setIsUploading(false);
@@ -115,8 +146,15 @@ export default function SampleDetail() {
   }
 
   const categoryName = getCategoryName(sample.categoryId ?? 1);
-  const hasCustomImage = !!thumbSrc;
   const isTrendy = sample.line === '트랜디';
+
+  // 컬렉션 탭에 표시할 제품 목록
+  const collectionTabProducts: Record<string, typeof trendyAll> = {
+    '유사색상': similarColorProducts,
+    '패턴': patternProducts,
+    '천장': ceilingProducts,
+  };
+  const currentTabProducts = collectionTabProducts[collectionTab] ?? [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -170,7 +208,7 @@ export default function SampleDetail() {
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-3">
 
-              {/* 메인 이미지 — 드래그&드롭 영역 */}
+              {/* 메인 이미지 */}
               <div
                 className={cn(
                   'aspect-square rounded-xl overflow-hidden bg-muted relative group shadow-md transition-all',
@@ -179,17 +217,13 @@ export default function SampleDetail() {
                 )}
                 onClick={() => {
                   if (isUploading) return;
-                  if (hasNoImage) {
-                    fileInputRef.current?.click();
-                  } else {
-                    setIsImageExpanded(true);
-                  }
+                  if (hasNoImage) fileInputRef.current?.click();
+                  else setIsImageExpanded(true);
                 }}
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleDrop}
               >
-                {/* 이미지 없을 때 Placeholder */}
                 {hasNoImage ? (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gray-50 border-2 border-dashed border-gray-300">
                     <ImagePlus className="w-12 h-12 text-gray-300" />
@@ -203,42 +237,31 @@ export default function SampleDetail() {
                   </div>
                 ) : (
                   <>
-                    {/* 이미지 */}
                     <img
                       src={displayThumb}
                       alt={sample.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-
-                    {/* 업로드 중 오버레이 */}
                     {isUploading && (
                       <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
                         <Loader2 className="w-10 h-10 text-white animate-spin" />
                         <span className="text-white text-sm font-medium">이미지 처리 중...</span>
                       </div>
                     )}
-
-                    {/* 드래그 오버 오버레이 */}
                     {isDragOver && !isUploading && (
                       <div className="absolute inset-0 bg-blue-500/40 flex flex-col items-center justify-center gap-2 pointer-events-none">
                         <ImagePlus className="w-12 h-12 text-white drop-shadow-lg" />
                         <span className="text-white text-sm font-semibold">이미지를 놓으세요</span>
                       </div>
                     )}
-
-                    {/* 호버 시 줌 아이콘 */}
                     {!isUploading && !isDragOver && (
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
                         <ZoomIn className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
                       </div>
                     )}
-
-                    {/* 품번 오버레이 */}
                     <div className="absolute bottom-3 left-3 bg-black/50 text-white text-xs font-mono px-2 py-1 rounded">
                       {sample.productNo}
                     </div>
-
-                    {/* 사용자 업로드 배지 */}
                     {hasCustomImage && (
                       <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-medium shadow">
                         사용자 이미지
@@ -248,14 +271,12 @@ export default function SampleDetail() {
                 )}
               </div>
 
-              {/* 업로드 에러 메시지 */}
               {uploadError && (
                 <p className="text-xs text-red-500 text-center">{uploadError}</p>
               )}
 
-              {/* 이미지 업로드 버튼 영역 */}
+              {/* 업로드 버튼 */}
               <div className="grid grid-cols-2 gap-2">
-                {/* 이미지 교체 버튼 */}
                 <Button
                   variant="default"
                   size="sm"
@@ -266,8 +287,6 @@ export default function SampleDetail() {
                   <Upload className="w-3.5 h-3.5" />
                   {hasCustomImage ? '이미지 교체' : '이미지 업로드'}
                 </Button>
-
-                {/* 다운로드 버튼 */}
                 <a
                   href={hasNoImage ? undefined : displayOrig}
                   download={hasNoImage ? undefined : `${sample.productNo}.jpg`}
@@ -280,7 +299,6 @@ export default function SampleDetail() {
                 </a>
               </div>
 
-              {/* 기본 이미지로 복원 버튼 (업로드된 이미지가 있을 때만) */}
               {hasCustomImage && (
                 <Button
                   variant="ghost"
@@ -293,13 +311,11 @@ export default function SampleDetail() {
                 </Button>
               )}
 
-              {/* 안내 텍스트 */}
               <p className="text-xs text-muted-foreground text-center leading-relaxed">
                 이미지를 드래그&드롭하거나 버튼을 클릭하여 업로드할 수 있습니다.<br />
                 카드용 이미지는 자동으로 400×400으로 조정됩니다.
               </p>
 
-              {/* 숨겨진 파일 입력 */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -308,7 +324,7 @@ export default function SampleDetail() {
                 onChange={handleFileChange}
               />
 
-              {/* 같은 라인 이전/다음 탐색 */}
+              {/* 이전/다음 탐색 */}
               {linemates.length > 1 && (
                 <div className="flex items-center justify-between gap-2 pt-1">
                   <Button
@@ -319,7 +335,7 @@ export default function SampleDetail() {
                     className="flex-1 gap-1 text-xs"
                   >
                     <ChevronLeft className="w-3 h-3" />
-                    {prevSample ? prevSample.name : '이전'}
+                    {prevSample ? prevSample.productNo : '이전'}
                   </Button>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {currentIdx + 1} / {linemates.length}
@@ -331,20 +347,62 @@ export default function SampleDetail() {
                     onClick={() => nextSample && navigate(`/sample/${nextSample.id}`)}
                     className="flex-1 gap-1 text-xs"
                   >
-                    {nextSample ? nextSample.name : '다음'}
+                    {nextSample ? nextSample.productNo : '다음'}
                     <ChevronRight className="w-3 h-3" />
                   </Button>
                 </div>
               )}
 
-              {/* 같은 라인 썸네일 그리드 */}
-              {linemates.length > 1 && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2 font-medium">
-                    {sample.collectionName ?? sample.line} 컬렉션 ({linemates.length}종)
-                  </p>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {linemates.map((s) => {
+              {/* 컬렉션 분류 썸네일 탭 */}
+              {isTrendy && (
+                <div className="pt-1">
+                  {/* 탭 버튼 */}
+                  <div className="flex gap-1 mb-2">
+                    {(['유사색상', '패턴', '천장'] as const).map((tab) => {
+                      const count = collectionTabProducts[tab]?.length ?? 0;
+                      return (
+                        <button
+                          key={tab}
+                          onClick={() => setCollectionTab(tab)}
+                          className={cn(
+                            'flex-1 text-xs py-1.5 px-1 rounded-md font-medium transition-colors border',
+                            collectionTab === tab
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                          )}
+                        >
+                          {tab}
+                          <span className={cn(
+                            'ml-1 text-xs',
+                            collectionTab === tab ? 'text-blue-100' : 'text-gray-400'
+                          )}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* 탭 설명 */}
+                  {collectionTab === '유사색상' && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {currentColorGroup} 제품 ({similarColorProducts.length}종)
+                    </p>
+                  )}
+                  {collectionTab === '패턴' && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      패턴·텍스처·직물 제품 ({patternProducts.length}종)
+                    </p>
+                  )}
+                  {collectionTab === '천장' && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      천장 전용 제품 ({ceilingProducts.length}종)
+                    </p>
+                  )}
+
+                  {/* 썸네일 그리드 */}
+                  <div className="grid grid-cols-4 gap-1.5 max-h-64 overflow-y-auto">
+                    {currentTabProducts.map((s) => {
                       const storedThumb = getStoredThumb(s.id);
                       const thumbToShow = storedThumb ?? s.image;
                       const noImg = !storedThumb && (!s.image || s.image === '');
@@ -353,16 +411,23 @@ export default function SampleDetail() {
                           key={s.id}
                           onClick={() => navigate(`/sample/${s.id}`)}
                           className={cn(
-                            'aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all',
+                            'aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all relative',
                             s.id === sampleId
                               ? 'border-blue-500 shadow-md scale-105'
                               : 'border-transparent hover:border-gray-300'
                           )}
-                          title={s.productNo}
+                          title={`${s.productNo} ${s.color ?? ''}`}
                         >
                           {noImg ? (
                             <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                              <ImagePlus className="w-4 h-4 text-gray-300" />
+                              {s.colorHex ? (
+                                <div
+                                  className="w-full h-full"
+                                  style={{ backgroundColor: s.colorHex }}
+                                />
+                              ) : (
+                                <ImagePlus className="w-4 h-4 text-gray-300" />
+                              )}
                             </div>
                           ) : (
                             <img
@@ -371,9 +436,21 @@ export default function SampleDetail() {
                               className="w-full h-full object-cover"
                             />
                           )}
+                          {/* 색상 칩 오버레이 (이미지 없을 때만) */}
+                          {noImg && s.color && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-center"
+                              style={{ fontSize: '7px', padding: '1px 0' }}>
+                              {s.color}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
+                    {currentTabProducts.length === 0 && (
+                      <p className="col-span-4 text-xs text-muted-foreground text-center py-4">
+                        해당 분류의 제품이 없습니다.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -392,6 +469,11 @@ export default function SampleDetail() {
                     {sample.materialType}
                   </Badge>
                 )}
+                {sample.collectionCategory && (
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                    {sample.collectionCategory}
+                  </Badge>
+                )}
                 {sample.specs.map((spec) => (
                   <Badge key={spec} variant="outline" className="text-xs bg-gray-50">
                     {spec}
@@ -400,7 +482,7 @@ export default function SampleDetail() {
               </div>
               <h1 className="text-3xl font-bold text-foreground mb-1">{sample.name}</h1>
               <p className="text-base text-muted-foreground font-mono">{sample.productNo}</p>
-              {sample.collectionName && sample.collectionName !== sample.line && (
+              {sample.collectionName && (
                 <p className="text-sm text-muted-foreground mt-1">
                   컬렉션: <span className="font-medium text-foreground">{sample.collectionName}</span>
                 </p>
@@ -443,9 +525,27 @@ export default function SampleDetail() {
                         </div>
                       )}
                       <div className="border-b border-border pb-3">
-                        <p className="text-sm text-muted-foreground font-medium mb-1">라인</p>
-                        <p className="font-semibold">{sample.line}</p>
+                        <p className="text-sm text-muted-foreground font-medium mb-1">분류</p>
+                        <p className="font-semibold">{sample.collectionCategory ?? '-'}</p>
                       </div>
+                      {/* 색상 */}
+                      {sample.color && (
+                        <div className="border-b border-border pb-3 col-span-2">
+                          <p className="text-sm text-muted-foreground font-medium mb-1">색상</p>
+                          <div className="flex items-center gap-2">
+                            {sample.colorHex && (
+                              <div
+                                className="w-6 h-6 rounded-full border border-gray-200 shadow-sm flex-shrink-0"
+                                style={{ backgroundColor: sample.colorHex }}
+                              />
+                            )}
+                            <span className="font-semibold">{sample.color}</span>
+                            {sample.colorGroup && (
+                              <span className="text-xs text-muted-foreground">({sample.colorGroup})</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -468,37 +568,27 @@ export default function SampleDetail() {
                   </CardContent>
                 </Card>
 
-                {/* 트랜디 공통 인증 정보 */}
+                {/* 트랜디 친환경 인증 */}
                 {isTrendy && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base">친환경 인증</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-1 gap-2">
-                          <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                      <div className="grid grid-cols-1 gap-2">
+                        {[
+                          { title: '환경표지 인증', desc: '환경부 공식 환경표지 인증 제품' },
+                          { title: '친환경 건축자재 인증', desc: '친환경 건축자재 품질 인증 제품' },
+                          { title: '8대 중금속 불검출', desc: '납, 카드뮴, 크롬, 안티몬, 비소, 바륨, 셀레늄, 수은 전 항목 불검출' },
+                        ].map((item) => (
+                          <div key={item.title} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
                             <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
                             <div>
-                              <p className="text-sm font-medium text-green-800">환경표지 인증</p>
-                              <p className="text-xs text-green-600 mt-0.5">환경부 공식 환경표지 인증 제품</p>
+                              <p className="text-sm font-medium text-green-800">{item.title}</p>
+                              <p className="text-xs text-green-600 mt-0.5">{item.desc}</p>
                             </div>
                           </div>
-                          <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
-                            <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
-                            <div>
-                              <p className="text-sm font-medium text-green-800">친환경 건축자재 인증</p>
-                              <p className="text-xs text-green-600 mt-0.5">친환경 건축자재 품질 인증 제품</p>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
-                            <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
-                            <div>
-                              <p className="text-sm font-medium text-green-800">8대 중금속 불검출</p>
-                              <p className="text-xs text-green-600 mt-0.5">납, 카드뮴, 크롬, 안티몬, 비소, 바륨, 셀레늄, 수은 전 항목 불검출</p>
-                            </div>
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
@@ -510,7 +600,6 @@ export default function SampleDetail() {
                   <CardContent className="pt-6">
                     {isTrendy ? (
                       <div className="space-y-5 text-foreground leading-relaxed">
-                        {/* 제품 설명 */}
                         {sample.description ? (
                           <div>
                             <p className="font-semibold text-lg mb-2">
@@ -522,38 +611,34 @@ export default function SampleDetail() {
                           <p>GNI개나리 트랜디 <strong>{sample.name}</strong> 제품입니다.</p>
                         )}
 
-                        {/* 트랜디 공통 특징 */}
                         <div className="border-t border-border pt-4 space-y-4">
                           <p className="font-semibold text-base">트랜디 프리미엄 합지 특징</p>
-
                           <div className="grid grid-cols-1 gap-3">
-                            <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100">
-                              <p className="font-semibold text-emerald-800 mb-1">피톤치드 함유</p>
-                              <p className="text-sm text-emerald-700">
-                                피톤치드가 함유되어 있어 실내 유해 물질을 감소시켜 지친 몸과 마음을 회복시켜 줍니다.
-                                항균효과, 스트레스 완화, 집중력 향상, 진정작용의 효과가 있습니다.
-                              </p>
-                            </div>
-
-                            <div className="p-4 bg-sky-50 rounded-lg border border-sky-100">
-                              <p className="font-semibold text-sky-800 mb-1">수성잉크 인쇄</p>
-                              <p className="text-sm text-sky-700">
-                                합지제품에 수성잉크를 사용하여 만든 제품으로 발암물질 걱정없이 공간을 상쾌하게 합니다.
-                                믿고 선택할 수 있는 진정한 친환경 제품입니다.
-                              </p>
-                            </div>
-
-                            <div className="p-4 bg-purple-50 rounded-lg border border-purple-100">
-                              <p className="font-semibold text-purple-800 mb-1">오염방지 코팅</p>
-                              <p className="text-sm text-purple-700">
-                                항균코팅층이 적용되어 오염 방지 기능을 제공합니다.
-                                일상적인 오염에도 깨끗한 상태를 유지할 수 있습니다.
-                              </p>
-                            </div>
+                            {[
+                              {
+                                color: 'emerald',
+                                title: '피톤치드 함유',
+                                desc: '피톤치드가 함유되어 있어 실내 유해 물질을 감소시켜 지친 몸과 마음을 회복시켜 줍니다. 항균효과, 스트레스 완화, 집중력 향상, 진정작용의 효과가 있습니다.',
+                              },
+                              {
+                                color: 'sky',
+                                title: '수성잉크 인쇄',
+                                desc: '합지제품에 수성잉크를 사용하여 만든 제품으로 발암물질 걱정없이 공간을 상쾌하게 합니다. 믿고 선택할 수 있는 진정한 친환경 제품입니다.',
+                              },
+                              {
+                                color: 'purple',
+                                title: '오염방지 코팅',
+                                desc: '항균코팅층이 적용되어 오염 방지 기능을 제공합니다. 일상적인 오염에도 깨끗한 상태를 유지할 수 있습니다.',
+                              },
+                            ].map((item) => (
+                              <div key={item.title} className={`p-4 bg-${item.color}-50 rounded-lg border border-${item.color}-100`}>
+                                <p className={`font-semibold text-${item.color}-800 mb-1`}>{item.title}</p>
+                                <p className={`text-sm text-${item.color}-700`}>{item.desc}</p>
+                              </div>
+                            ))}
                           </div>
                         </div>
 
-                        {/* 구조층 */}
                         <div className="border-t border-border pt-4">
                           <p className="font-semibold text-base mb-3">제품 구조층</p>
                           <div className="space-y-1.5">
@@ -590,7 +675,7 @@ export default function SampleDetail() {
         </div>
       </div>
 
-      {/* Image Zoom Modal — 원본 해상도 유지 */}
+      {/* Image Zoom Modal */}
       {isImageExpanded && !hasNoImage && (
         <div
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
@@ -604,29 +689,26 @@ export default function SampleDetail() {
               src={displayOrig}
               alt={sample.name}
               className="rounded-lg shadow-2xl"
-              style={{
-                maxWidth: '95vw',
-                maxHeight: '90vh',
-                objectFit: 'contain',
-              }}
+              style={{ maxWidth: '95vw', maxHeight: '90vh', objectFit: 'contain' }}
               onClick={(e) => e.stopPropagation()}
             />
-            {/* 닫기 버튼 */}
             <button
               onClick={() => setIsImageExpanded(false)}
               className="absolute top-3 right-3 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-            {/* 하단 정보 */}
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 text-white text-sm px-4 py-1.5 rounded-full">
               <span>{sample.name}</span>
               <span className="text-white/50">·</span>
               <span className="font-mono">{sample.productNo}</span>
-              {hasCustomImage && (
+              {sample.color && (
                 <>
                   <span className="text-white/50">·</span>
-                  <span className="text-blue-300 text-xs">사용자 업로드 이미지 (원본)</span>
+                  {sample.colorHex && (
+                    <div className="w-3 h-3 rounded-full border border-white/40" style={{ backgroundColor: sample.colorHex }} />
+                  )}
+                  <span>{sample.color}</span>
                 </>
               )}
             </div>
