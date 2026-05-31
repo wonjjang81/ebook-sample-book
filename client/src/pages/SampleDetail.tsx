@@ -36,7 +36,7 @@ export default function SampleDetail() {
   const [isImageExpanded, setIsImageExpanded] = useState(false);
   const [isProductSelected, setIsProductSelected] = useState(false);
   const [isProductLiked, setIsProductLiked] = useState(false);
-  const [collectionTab, setCollectionTab] = useState<'유사색상' | '패턴' | '천장'>('유사색상');
+  const [collectionTab, setCollectionTab] = useState<'유사색상' | '패턴'>('유사색상');
 
   const [thumbSrc, setThumbSrc] = useState<string | null>(null);
   const [origSrc, setOrigSrc] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export default function SampleDetail() {
   // 현재 제품의 collectionCategory에 맞게 기본 탭 설정
   useEffect(() => {
     if (sample?.collectionCategory) {
-      const cat = sample.collectionCategory as '유사색상' | '패턴' | '천장';
+      const cat = sample.collectionCategory === '유사색상' ? '유사색상' : '패턴';
       setCollectionTab(cat);
     }
   }, [sample]);
@@ -69,19 +69,18 @@ export default function SampleDetail() {
   const prevSample = currentIdx > 0 ? linemates[currentIdx - 1] : null;
   const nextSample = currentIdx < linemates.length - 1 ? linemates[currentIdx + 1] : null;
 
-  // 컬렉션 탭별 제품 목록 (트랜디 라인 전체에서 분류)
-  const trendyAll = ALL_SAMPLES.filter(
-    (s) => s.line === '트랜디' && s.categoryId === (sample?.categoryId ?? 1)
+  // 같은 카테고리의 도배 전체 제품
+  const categoryAll = ALL_SAMPLES.filter(
+    (s) => s.categoryId === (sample?.categoryId ?? 1)
   );
 
   // 유사색상: 같은 colorGroup 제품들
   const currentColorGroup = sample?.colorGroup ?? getColorGroup(sample?.color ?? '');
-  const similarColorProducts = trendyAll.filter(
+  const similarColorProducts = categoryAll.filter(
     (s) => s.collectionCategory === '유사색상' &&
       (s.colorGroup ?? getColorGroup(s.color ?? '')) === currentColorGroup
   );
-  const patternProducts = trendyAll.filter((s) => s.collectionCategory === '패턴');
-  const ceilingProducts = trendyAll.filter((s) => s.collectionCategory === '천장');
+  const patternProducts = categoryAll.filter((s) => s.collectionCategory === '패턴');
 
   const handleGoBack = () => navigate('/');
 
@@ -146,13 +145,11 @@ export default function SampleDetail() {
   }
 
   const categoryName = getCategoryName(sample.categoryId ?? 1);
-  const isTrendy = sample.line === '트랜디';
 
   // 컬렉션 탭에 표시할 제품 목록
-  const collectionTabProducts: Record<string, typeof trendyAll> = {
+  const collectionTabProducts: Record<string, typeof categoryAll> = {
     '유사색상': similarColorProducts,
     '패턴': patternProducts,
-    '천장': ceilingProducts,
   };
   const currentTabProducts = collectionTabProducts[collectionTab] ?? [];
 
@@ -354,11 +351,10 @@ export default function SampleDetail() {
               )}
 
               {/* 컬렉션 분류 썸네일 탭 */}
-              {isTrendy && (
-                <div className="pt-1">
+              <div className="pt-1">
                   {/* 탭 버튼 */}
                   <div className="flex gap-1 mb-2">
-                    {(['유사색상', '패턴', '천장'] as const).map((tab) => {
+                    {(['유사색상', '패턴'] as const).map((tab) => {
                       const count = collectionTabProducts[tab]?.length ?? 0;
                       return (
                         <button
@@ -391,12 +387,7 @@ export default function SampleDetail() {
                   )}
                   {collectionTab === '패턴' && (
                     <p className="text-xs text-muted-foreground mb-2">
-                      패턴·텍스처·직물 제품 ({patternProducts.length}종)
-                    </p>
-                  )}
-                  {collectionTab === '천장' && (
-                    <p className="text-xs text-muted-foreground mb-2">
-                      천장 전용 제품 ({ceilingProducts.length}종)
+                      패턴·텍스처·직물·타일 제품 ({patternProducts.length}종)
                     </p>
                   )}
 
@@ -452,8 +443,8 @@ export default function SampleDetail() {
                       </p>
                     )}
                   </div>
-                </div>
-              )}
+              </div>
+
             </div>
           </div>
 
