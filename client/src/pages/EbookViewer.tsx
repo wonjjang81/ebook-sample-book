@@ -14,6 +14,7 @@ import { Search, Settings, ChevronDown, ChevronRight, Download, Save, Trash2, Up
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { PublishModal } from '@/components/PublishModal';
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';

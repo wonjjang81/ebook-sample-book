@@ -9,7 +9,7 @@ export const CATEGORIES = [
       {
         name: '개나리',
         groups: [
-          { name: '방염벽지', lines: ['프리모', 'Plaster&Paint', 'Simple Fabric', 'Urban Fabric', 'Kids', 'Ceiling'] },
+          { name: '방염벽지', lines: ['트랜디', '프리모', 'Plaster&Paint', 'Simple Fabric', 'Urban Fabric', 'Kids', 'Ceiling'] },
         ],
       },
       { name: '신한', groups: [{ name: '일반벽지', lines: ['모던', '클래식'] }] },
@@ -75,6 +75,19 @@ export interface Sample {
 // 카테고리별 샘플 데이터
 export const MOCK_SAMPLES: Record<number, Sample[]> = {
   1: [
+    // --- 트랜디 컬렉션 (광폭 합지) ---
+    { id: '1-trendy-1', productNo: '39369-6', name: '트랜디 쿨그레이', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/39369-6.jpg' },
+    { id: '1-trendy-2', productNo: '28352-1', name: '트랜디 심플화이트', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/28352-1.jpg' },
+    { id: '1-trendy-3', productNo: '28352-2', name: '트랜디 라이트그레이지', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/28352-2.jpg' },
+    { id: '1-trendy-4', productNo: '28352-3', name: '트랜디 라이트그레이', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/28352-3.jpg' },
+    { id: '1-trendy-5', productNo: '28352-4', name: '트랜디 그레이', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/28352-4.jpg' },
+    { id: '1-trendy-6', productNo: '28349-1', name: '트랜디 오프화이트', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/28349-1.jpg' },
+    { id: '1-trendy-7', productNo: '28348-2', name: '트랜디 라이트 그레이', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/28348-2.jpg' },
+    { id: '1-trendy-8', productNo: '39034-1', name: '트랜디 화이트', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/39034-1.jpg' },
+    { id: '1-trendy-9', productNo: '28323-1', name: '트랜디 화이트', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/28323-1.jpg' },
+    { id: '1-trendy-10', productNo: '28310-2', name: '트랜디 라이트그레이', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/28310-2.jpg' },
+    { id: '1-trendy-11', productNo: '29080-1', name: '트랜디 화이트', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/29080-1.jpg' },
+    { id: '1-trendy-12', productNo: '29080-2', name: '트랜디 화이트', brand: '개나리', line: '트랜디', specs: ['합지', '광폭', '피톤치드 함유'], image: '/images/products/gaenari/trendy/29080-2.jpg' },
     // --- 프리모 컬렉션 ---
     { id: '1-1', productNo: '92102-1', name: '프리모 크랙 화이트', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-1.jpg' },
     { id: '1-2', productNo: '92102-2', name: '프리모 크랙 아이보리', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-2.jpg' },
