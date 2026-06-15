@@ -1,18 +1,21 @@
 /**
  * CameraSearch.tsx
- * AI 자재 검색 - 카메라 촬영 및 이미지 업로드 화면
+ * AI 자재 검색 - 2단계 카메라 촬영 프로세스
+ *
+ * 단계:
+ * 1단계: 백색 기준물(A4, 명함 등) 촬영 - 화이트 밸런스 기준 설정
+ * 2단계: 자재 촬영 - 1단계 기준물 데이터를 활용한 정확한 검색
  *
  * 기능:
- * - 카메라 실시간 프리뷰 (60% 중앙 가이드라인)
- * - 실시간 피드백 (밝기, 백색 기준물 감지)
- * - 단일 촬영 / 앙상블(다중) 촬영 모드
- * - 갤러리에서 이미지 업로드 지원
- * - 검색 결과 화면으로 이동
+ * - 단계별 가이드 UI (1단계 → 2단계)
+ * - 실시간 피드백 (밝기, 백색 물체 감지)
+ * - 단일/앙상블 촬영 모드
+ * - 갤러리 업로드 지원
  */
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
-import { Camera, Upload, X, CheckCircle, AlertCircle, Loader2, ChevronLeft, RefreshCw, Layers } from 'lucide-react';
+import { Camera, Upload, X, CheckCircle, AlertCircle, Loader2, ChevronLeft, RefreshCw, Layers, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -20,6 +23,7 @@ import { getCameraFeedback, type FeedbackResult } from '@/lib/materialMatcherApi
 
 type CaptureMode = 'single' | 'ensemble';
 type CameraStatus = 'idle' | 'loading' | 'ready' | 'error';
+type SearchStage = 'reference' | 'material'; // 1단계: 백색 기준물, 2단계: 자재
 
 export default function CameraSearch() {
   const [, navigate] = useLocation();
@@ -31,9 +35,17 @@ export default function CameraSearch() {
 
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>('idle');
   const [cameraError, setCameraError] = useState<string>('');
+  const [searchStage, setSearchStage] = useState<SearchStage>('reference'); // 현재 단계
   const [captureMode, setCaptureMode] = useState<CaptureMode>('single');
-  const [capturedImages, setCapturedImages] = useState<File[]>([]);
-  const [capturedPreviews, setCapturedPreviews] = useState<string[]>([]);
+  
+  // 1단계: 백색 기준물 이미지
+  const [referenceImage, setReferenceImage] = useState<File | null>(null);
+  const [referencePreview, setReferencePreview] = useState<string>('');
+  
+  // 2단계: 자재 이미지들
+  const [materialImages, setMaterialImages] = useState<File[]>([]);
+  const [materialPreviews, setMaterialPreviews] = useState<string[]>([]);
+  
   const [feedback, setFeedback] = useState<FeedbackResult | null>(null);
   const [isFeedbackLoading, setIsFeedbackLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -99,7 +111,7 @@ export default function CameraSearch() {
     return () => stopCamera();
   }, [stopCamera]);
 
-  // 실시간 피드백 (2초마다 프레임 캡처 후 API 전송)
+  // 실시간 피드백
   useEffect(() => {
     if (cameraStatus !== 'ready' || !apiAvailable) return;
 
@@ -119,7 +131,7 @@ export default function CameraSearch() {
           const result = await getCameraFeedback(blob);
           setFeedback(result);
         } catch {
-          // 피드백 실패는 무시 (카메라 화면은 유지)
+          // 피드백 실패는 무시
         } finally {
           setIsFeedbackLoading(false);
         }
@@ -132,7 +144,7 @@ export default function CameraSearch() {
     };
   }, [cameraStatus, apiAvailable, isFeedbackLoading]);
 
-  // 사진 촬영
+  // 사진 촬영 (단계별 처리)
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
@@ -148,332 +160,636 @@ export default function CameraSearch() {
       const file = new File([blob], `capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
       const previewUrl = URL.createObjectURL(blob);
 
-      if (captureMode === 'single') {
-        // 단일 모드: 기존 이미지 교체
-        setCapturedImages([file]);
-        setCapturedPreviews([previewUrl]);
+      if (searchStage === 'reference') {
+        // 1단계: 백색 기준물 저장 (1장만)
+        setReferenceImage(file);
+        setReferencePreview(previewUrl);
       } else {
-        // 앙상블 모드: 최대 3장까지 추가
-        if (capturedImages.length < 3) {
-          setCapturedImages((prev) => [...prev, file]);
-          setCapturedPreviews((prev) => [...prev, previewUrl]);
+        // 2단계: 자재 이미지 저장
+        if (captureMode === 'single') {
+          setMaterialImages([file]);
+          setMaterialPreviews([previewUrl]);
+        } else {
+          if (materialImages.length < 3) {
+            setMaterialImages((prev) => [...prev, file]);
+            setMaterialPreviews((prev) => [...prev, previewUrl]);
+          }
         }
       }
     }, 'image/jpeg', 0.9);
-  }, [captureMode, capturedImages.length]);
+  }, [searchStage, captureMode, materialImages.length]);
 
-  // 갤러리 업로드
+  // 갤러리 업로드 (단계별 처리)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    const newFiles = captureMode === 'single' ? [files[0]] : files.slice(0, 3);
-    const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
-
-    if (captureMode === 'single') {
-      setCapturedImages(newFiles);
-      setCapturedPreviews(newPreviews);
+    if (searchStage === 'reference') {
+      // 1단계: 백색 기준물 (1장만)
+      const file = files[0];
+      setReferenceImage(file);
+      setReferencePreview(URL.createObjectURL(file));
     } else {
-      const remaining = 3 - capturedImages.length;
-      const toAdd = newFiles.slice(0, remaining);
-      const toAddPreviews = newPreviews.slice(0, remaining);
-      setCapturedImages((prev) => [...prev, ...toAdd]);
-      setCapturedPreviews((prev) => [...prev, ...toAddPreviews]);
+      // 2단계: 자재 이미지 (최대 3장)
+      const newFiles = captureMode === 'single' ? [files[0]] : files.slice(0, 3);
+      const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
+
+      if (captureMode === 'single') {
+        setMaterialImages(newFiles);
+        setMaterialPreviews(newPreviews);
+      } else {
+        const remaining = 3 - materialImages.length;
+        const toAdd = newFiles.slice(0, remaining);
+        const toAddPreviews = newPreviews.slice(0, remaining);
+        setMaterialImages((prev) => [...prev, ...toAdd]);
+        setMaterialPreviews((prev) => [...prev, ...toAddPreviews]);
+      }
     }
     e.target.value = '';
   };
 
-  // 이미지 제거
-  const removeImage = (idx: number) => {
-    setCapturedImages((prev) => prev.filter((_, i) => i !== idx));
-    setCapturedPreviews((prev) => {
-      URL.revokeObjectURL(prev[idx]);
-      return prev.filter((_, i) => i !== idx);
-    });
-  };
-
-  // 검색 실행 → 결과 페이지로 이동
-  const handleSearch = async () => {
-    if (!capturedImages.length) return;
-    setIsSearching(true);
-
-    // 이미지를 sessionStorage에 임시 저장 (결과 페이지에서 사용)
-    const imageDataUrls: string[] = [];
-    for (const file of capturedImages) {
-      const dataUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.readAsDataURL(file);
-      });
-      imageDataUrls.push(dataUrl);
-    }
-
-    sessionStorage.setItem('matchImages', JSON.stringify(imageDataUrls));
-    sessionStorage.setItem('matchMode', captureMode);
-    setIsSearching(false);
-    navigate('/ai-search/result');
-  };
-
-  // 초기화
-  const handleReset = () => {
-    capturedPreviews.forEach((url) => URL.revokeObjectURL(url));
-    setCapturedImages([]);
-    setCapturedPreviews([]);
+  // 1단계 완료 → 2단계로 진행
+  const proceedToMaterialStage = () => {
+    if (!referenceImage) return;
+    stopCamera();
+    setSearchStage('material');
+    setCameraStatus('idle');
     setFeedback(null);
   };
 
-  // 피드백 색상
-  const feedbackColor = feedback?.status_color === 'green'
-    ? 'text-green-500 border-green-500'
-    : feedback?.status_color === 'yellow'
-    ? 'text-yellow-500 border-yellow-500'
-    : 'text-red-500 border-red-400';
+  // 1단계 재촬영
+  const retakeReference = () => {
+    setReferenceImage(null);
+    setReferencePreview('');
+    if (cameraStatus === 'idle') {
+      startCamera();
+    }
+  };
 
-  const isReady = feedback?.is_ready ?? false;
-  const canSearch = capturedImages.length > 0;
-  const ensembleTarget = 3;
+  // 2단계 재촬영
+  const retakeMaterial = () => {
+    setMaterialImages([]);
+    setMaterialPreviews([]);
+    if (cameraStatus === 'idle') {
+      startCamera();
+    }
+  };
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* 상단 헤더 */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card sticky top-0 z-10">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-base font-bold">AI 자재 검색</h1>
-          <p className="text-xs text-muted-foreground">사진으로 유사한 자재를 찾아드립니다</p>
-        </div>
-        {/* API 상태 표시 */}
-        <Badge
-          variant={apiAvailable === true ? 'default' : apiAvailable === false ? 'destructive' : 'secondary'}
-          className="text-xs"
-        >
-          {apiAvailable === true ? '서버 연결됨' : apiAvailable === false ? '서버 오프라인' : '확인 중...'}
-        </Badge>
-      </div>
+  // 1단계로 돌아가기
+  const backToReference = () => {
+    setSearchStage('reference');
+    setMaterialImages([]);
+    setMaterialPreviews([]);
+    setCameraStatus('idle');
+    setFeedback(null);
+    startCamera();
+  };
 
-      <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-4 py-4 gap-4">
+  // 검색 실행
+  const handleSearch = async () => {
+    if (!referenceImage || !materialImages.length) return;
+    setIsSearching(true);
 
-        {/* 모드 선택 */}
-        <div className="flex gap-2 bg-muted rounded-lg p-1">
-          <button
-            onClick={() => { setCaptureMode('single'); handleReset(); }}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all',
-              captureMode === 'single'
-                ? 'bg-background shadow text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <Camera className="w-4 h-4" />
-            단일 촬영
-          </button>
-          <button
-            onClick={() => { setCaptureMode('ensemble'); handleReset(); }}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all',
-              captureMode === 'ensemble'
-                ? 'bg-background shadow text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <Layers className="w-4 h-4" />
-            다중 촬영 (정확도 향상)
-          </button>
-        </div>
+    try {
+      // sessionStorage에 저장 (결과 페이지에서 사용)
+      const referenceBlob = new Blob([referenceImage], { type: 'image/jpeg' });
+      const materialBlobs = materialImages.map((img) => new Blob([img], { type: 'image/jpeg' }));
 
-        {/* 촬영 안내 */}
-        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 text-sm text-blue-700 dark:text-blue-300">
-          {captureMode === 'single' ? (
-            <p>📸 <strong>A4 용지</strong>를 자재 옆에 놓고 촬영하면 색상 보정이 자동으로 적용됩니다.</p>
-          ) : (
-            <p>📸 동일 자재를 <strong>각도·조명을 달리하여 최대 3장</strong> 촬영하면 정확도가 향상됩니다.</p>
-          )}
-        </div>
+      sessionStorage.setItem('referenceImage', referencePreview);
+      sessionStorage.setItem(
+        'materialImages',
+        JSON.stringify(materialPreviews)
+      );
+      sessionStorage.setItem('captureMode', captureMode);
 
-        {/* 카메라 뷰파인더 */}
-        <div className="relative bg-black rounded-xl overflow-hidden aspect-video">
-          {cameraStatus === 'idle' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-              <Camera className="w-12 h-12 text-gray-400" />
-              <Button onClick={startCamera} variant="secondary">
-                카메라 시작
-              </Button>
-            </div>
-          )}
-          {cameraStatus === 'loading' && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 text-white animate-spin" />
-            </div>
-          )}
-          {cameraStatus === 'error' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
-              <AlertCircle className="w-10 h-10 text-red-400" />
-              <p className="text-white text-sm">{cameraError}</p>
-              <Button onClick={startCamera} variant="secondary" size="sm">
-                <RefreshCw className="w-4 h-4 mr-2" /> 다시 시도
-              </Button>
-            </div>
-          )}
+      navigate('/ai-search/result');
+    } catch (err) {
+      console.error('검색 실행 오류:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
-          <video
-            ref={videoRef}
-            className={cn('w-full h-full object-cover', cameraStatus !== 'ready' && 'hidden')}
-            playsInline
-            muted
-          />
+  // ============ UI 렌더링 ============
 
-          {/* 중앙 가이드라인 (60%) */}
-          {cameraStatus === 'ready' && (
-            <>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div
-                  className={cn(
-                    'border-2 rounded-sm transition-colors duration-300',
-                    isReady ? 'border-green-400' : 'border-white/60'
-                  )}
-                  style={{ width: '60%', height: '60%' }}
-                />
-              </div>
-              {/* 실시간 피드백 메시지 */}
-              <div className="absolute bottom-3 left-0 right-0 flex justify-center px-4">
-                <div
-                  className={cn(
-                    'bg-black/70 backdrop-blur-sm rounded-full px-4 py-1.5 text-xs font-medium border transition-colors duration-300',
-                    isReady ? 'text-green-400 border-green-500' : 'text-yellow-300 border-yellow-500'
-                  )}
-                >
-                  {feedback ? (
-                    <span className="flex items-center gap-1.5">
-                      {isReady
-                        ? <CheckCircle className="w-3.5 h-3.5" />
-                        : <AlertCircle className="w-3.5 h-3.5" />}
-                      {feedback.message}
-                    </span>
-                  ) : (
-                    <span className="text-white/70">자재를 가이드라인 안에 맞춰주세요</span>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* 숨겨진 캔버스 (프레임 캡처용) */}
-        <canvas ref={canvasRef} className="hidden" />
-
-        {/* 촬영 버튼 영역 */}
-        {cameraStatus === 'ready' && (
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={capturePhoto}
-              disabled={captureMode === 'ensemble' && capturedImages.length >= ensembleTarget}
-              className="flex-1 h-12 text-base font-semibold"
-            >
-              <Camera className="w-5 h-5 mr-2" />
-              {captureMode === 'ensemble'
-                ? `촬영 (${capturedImages.length}/${ensembleTarget})`
-                : '촬영'}
-            </Button>
-            <Button variant="outline" size="icon" className="h-12 w-12" onClick={stopCamera}>
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
-        )}
-
-        {/* 갤러리 업로드 버튼 */}
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={captureMode === 'ensemble' && capturedImages.length >= ensembleTarget}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            갤러리에서 선택
-          </Button>
-          {capturedImages.length > 0 && (
-            <Button variant="ghost" size="icon" onClick={handleReset} title="초기화">
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple={captureMode === 'ensemble'}
-          className="hidden"
-          onChange={handleFileUpload}
-        />
-
-        {/* 촬영된 이미지 미리보기 */}
-        {capturedPreviews.length > 0 && (
+  if (cameraStatus === 'error') {
+    return (
+      <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full space-y-4 text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto" />
+          <h2 className="text-xl font-bold text-white">카메라 오류</h2>
+          <p className="text-sm text-slate-300">{cameraError}</p>
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">
-              촬영된 이미지 ({capturedPreviews.length}장)
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {capturedPreviews.map((url, idx) => (
-                <div key={idx} className="relative flex-shrink-0">
-                  <img
-                    src={url}
-                    alt={`촬영 ${idx + 1}`}
-                    className="w-20 h-20 object-cover rounded-lg border border-border"
-                  />
-                  <button
-                    onClick={() => removeImage(idx)}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                  <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs rounded px-1">
-                    {idx + 1}
-                  </div>
-                </div>
-              ))}
-              {/* 앙상블 모드: 빈 슬롯 표시 */}
-              {captureMode === 'ensemble' &&
-                Array.from({ length: ensembleTarget - capturedPreviews.length }).map((_, idx) => (
-                  <div
-                    key={`empty-${idx}`}
-                    className="flex-shrink-0 w-20 h-20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center"
-                  >
-                    <Camera className="w-6 h-6 text-muted-foreground/30" />
-                  </div>
-                ))}
+            <Button
+              onClick={() => {
+                setCameraStatus('idle');
+                startCamera();
+              }}
+              className="w-full bg-primary hover:bg-primary/90"
+            >
+              다시 시도
+            </Button>
+            <Button
+              onClick={() => navigate('/')}
+              variant="outline"
+              className="w-full"
+            >
+              돌아가기
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============ 1단계: 백색 기준물 촬영 ============
+  if (searchStage === 'reference') {
+    if (referenceImage) {
+      // 1단계 완료 - 확인 화면
+      return (
+        <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+          {/* 헤더 */}
+          <div className="bg-black/30 backdrop-blur-md border-b border-white/10 p-4">
+            <div className="max-w-4xl mx-auto flex items-center justify-between">
+              <div>
+                <h1 className="text-lg font-bold text-white">1단계: 백색 기준물 촬영 완료</h1>
+                <p className="text-xs text-slate-400 mt-1">다음 단계에서 자재를 촬영해 주세요</p>
+              </div>
+              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                완료
+              </Badge>
             </div>
           </div>
-        )}
 
-        {/* 검색 실행 버튼 */}
-        <Button
-          onClick={handleSearch}
-          disabled={!canSearch || isSearching || !apiAvailable}
-          className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700"
-        >
-          {isSearching ? (
-            <>
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              검색 중...
-            </>
-          ) : (
-            <>
-              <Camera className="w-5 h-5 mr-2" />
-              {captureMode === 'ensemble' && capturedImages.length > 1
-                ? `앙상블 검색 (${capturedImages.length}장)`
-                : 'AI 자재 검색'}
-            </>
-          )}
-        </Button>
+          {/* 콘텐츠 */}
+          <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-auto">
+            <div className="max-w-md w-full space-y-6">
+              {/* 미리보기 */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">촬영된 기준물</p>
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden border-2 border-emerald-400/50 bg-slate-800">
+                  <img
+                    src={referencePreview}
+                    alt="Reference"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
 
-        {!apiAvailable && apiAvailable !== null && (
-          <p className="text-xs text-center text-red-500">
-            AI 검색 서버가 오프라인 상태입니다. 서버를 시작한 후 다시 시도해 주세요.
-          </p>
-        )}
+              {/* 액션 버튼 */}
+              <div className="space-y-2">
+                <Button
+                  onClick={proceedToMaterialStage}
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                  2단계: 자재 촬영하기
+                </Button>
+                <Button
+                  onClick={retakeReference}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  다시 촬영
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 1단계 - 카메라 촬영 중
+    return (
+      <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+        {/* 헤더 */}
+        <div className="bg-black/30 backdrop-blur-md border-b border-white/10 p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-lg font-bold text-white">1단계: 백색 기준물 촬영</h1>
+              <Badge
+                className={cn(
+                  'flex items-center gap-1',
+                  apiAvailable
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+                    : 'bg-red-500/20 text-red-300 border-red-400/30'
+                )}
+              >
+                <div className={cn('w-2 h-2 rounded-full', apiAvailable ? 'bg-emerald-400' : 'bg-red-400')} />
+                {apiAvailable ? 'AI 서버 온라인' : 'AI 서버 오프라인'}
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-400">A4 용지, 명함 등 흰색 물체를 촬영해 주세요</p>
+          </div>
+        </div>
+
+        {/* 카메라 및 피드백 */}
+        <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
+          <div className="max-w-2xl w-full space-y-4">
+            {/* 비디오 */}
+            {cameraStatus === 'ready' && (
+              <div className="relative w-full aspect-video rounded-lg overflow-hidden border-2 border-slate-600 bg-black">
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover"
+                  playsInline
+                />
+
+                {/* 가이드라인 오버레이 */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-3/5 h-3/5 border-2 border-dashed border-yellow-400/50 rounded-lg" />
+                </div>
+
+                {/* 피드백 상태 */}
+                {feedback && (
+                  <div className="absolute bottom-4 left-4 right-4 space-y-2">
+                    {/* 밝기 */}
+                    <div className={cn(
+                      'px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2',
+                      feedback.brightness_status === 'good'
+                        ? 'bg-emerald-500/80 text-white'
+                        : feedback.brightness_status === 'warning'
+                        ? 'bg-yellow-500/80 text-white'
+                        : 'bg-red-500/80 text-white'
+                    )}>
+                      {feedback.brightness_status === 'good' ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4" />
+                      )}
+                      {feedback.brightness_message}
+                    </div>
+
+                    {/* 백색 물체 감지 */}
+                    <div className={cn(
+                      'px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2',
+                      feedback.white_object_status === 'detected'
+                        ? 'bg-emerald-500/80 text-white'
+                        : 'bg-yellow-500/80 text-white'
+                    )}>
+                      {feedback.white_object_status === 'detected' ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4" />
+                      )}
+                      {feedback.white_object_message}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {cameraStatus === 'loading' && (
+              <div className="w-full aspect-video rounded-lg bg-slate-800 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
+              </div>
+            )}
+
+            {/* 액션 버튼 */}
+            <div className="flex gap-2">
+              <Button
+                onClick={() => navigate('/')}
+                variant="outline"
+                className="flex-1"
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                취소
+              </Button>
+              <Button
+                onClick={() => {
+                  stopCamera();
+                  startCamera();
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                카메라 재시작
+              </Button>
+              <Button
+                onClick={capturePhoto}
+                disabled={cameraStatus !== 'ready'}
+                className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold"
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                촬영
+              </Button>
+            </div>
+
+            {/* 갤러리 업로드 */}
+            <div className="pt-2 border-t border-slate-700">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                className="w-full"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                갤러리에서 선택
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // ============ 2단계: 자재 촬영 ============
+  if (searchStage === 'material') {
+    if (materialImages.length > 0 || captureMode === 'single') {
+      // 2단계 완료 - 확인 화면
+      return (
+        <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+          {/* 헤더 */}
+          <div className="bg-black/30 backdrop-blur-md border-b border-white/10 p-4">
+            <div className="max-w-4xl mx-auto flex items-center justify-between">
+              <div>
+                <h1 className="text-lg font-bold text-white">2단계: 자재 촬영 완료</h1>
+                <p className="text-xs text-slate-400 mt-1">
+                  {captureMode === 'single' ? '1장 촬영됨' : `${materialImages.length}장 촬영됨`}
+                </p>
+              </div>
+              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                준비 완료
+              </Badge>
+            </div>
+          </div>
+
+          {/* 콘텐츠 */}
+          <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-auto">
+            <div className="max-w-2xl w-full space-y-6">
+              {/* 미리보기 그리드 */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-300 uppercase tracking-wider">촬영된 자재</p>
+                <div className={cn(
+                  'grid gap-2',
+                  materialPreviews.length === 1 ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-3'
+                )}>
+                  {materialPreviews.map((preview, idx) => (
+                    <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border-2 border-blue-400/50 bg-slate-800">
+                      <img
+                        src={preview}
+                        alt={`Material ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={() => {
+                          setMaterialImages((prev) => prev.filter((_, i) => i !== idx));
+                          setMaterialPreviews((prev) => {
+                            URL.revokeObjectURL(prev[idx]);
+                            return prev.filter((_, i) => i !== idx);
+                          });
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-600 rounded-full text-white"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 액션 버튼 */}
+              <div className="space-y-2">
+                <Button
+                  onClick={handleSearch}
+                  disabled={isSearching || !materialImages.length}
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
+                >
+                  {isSearching ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      검색 중...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      검색 시작
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={retakeMaterial}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  다시 촬영
+                </Button>
+                <Button
+                  onClick={backToReference}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  1단계로 돌아가기
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 2단계 - 카메라 촬영 중
+    return (
+      <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
+        {/* 헤더 */}
+        <div className="bg-black/30 backdrop-blur-md border-b border-white/10 p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-lg font-bold text-white">2단계: 자재 촬영</h1>
+              <Badge
+                className={cn(
+                  'flex items-center gap-1',
+                  apiAvailable
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+                    : 'bg-red-500/20 text-red-300 border-red-400/30'
+                )}
+              >
+                <div className={cn('w-2 h-2 rounded-full', apiAvailable ? 'bg-emerald-400' : 'bg-red-400')} />
+                {apiAvailable ? 'AI 서버 온라인' : 'AI 서버 오프라인'}
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-400">
+              {captureMode === 'single'
+                ? '자재를 촬영해 주세요'
+                : `자재를 촬영해 주세요 (${materialImages.length}/3)`}
+            </p>
+          </div>
+        </div>
+
+        {/* 카메라 및 피드백 */}
+        <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
+          <div className="max-w-2xl w-full space-y-4">
+            {/* 비디오 */}
+            {cameraStatus === 'ready' && (
+              <div className="relative w-full aspect-video rounded-lg overflow-hidden border-2 border-slate-600 bg-black">
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover"
+                  playsInline
+                />
+
+                {/* 가이드라인 오버레이 */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-3/5 h-3/5 border-2 border-dashed border-yellow-400/50 rounded-lg" />
+                </div>
+
+                {/* 피드백 상태 */}
+                {feedback && (
+                  <div className="absolute bottom-4 left-4 right-4 space-y-2">
+                    <div className={cn(
+                      'px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2',
+                      feedback.brightness_status === 'good'
+                        ? 'bg-emerald-500/80 text-white'
+                        : feedback.brightness_status === 'warning'
+                        ? 'bg-yellow-500/80 text-white'
+                        : 'bg-red-500/80 text-white'
+                    )}>
+                      {feedback.brightness_status === 'good' ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4" />
+                      )}
+                      {feedback.brightness_message}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {cameraStatus === 'loading' && (
+              <div className="w-full aspect-video rounded-lg bg-slate-800 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
+              </div>
+            )}
+
+            {/* 썸네일 미리보기 */}
+            {materialImages.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-300">촬영된 자재</p>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {materialPreviews.map((preview, idx) => (
+                    <div key={idx} className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-blue-400/50 bg-slate-800">
+                      <img
+                        src={preview}
+                        alt={`Thumbnail ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={() => {
+                          setMaterialImages((prev) => prev.filter((_, i) => i !== idx));
+                          setMaterialPreviews((prev) => {
+                            URL.revokeObjectURL(prev[idx]);
+                            return prev.filter((_, i) => i !== idx);
+                          });
+                        }}
+                        className="absolute top-0 right-0 p-0.5 bg-red-500/80 hover:bg-red-600 rounded-full text-white"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 액션 버튼 */}
+            <div className="flex gap-2">
+              <Button
+                onClick={backToReference}
+                variant="outline"
+                className="flex-1"
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                이전
+              </Button>
+              <Button
+                onClick={() => {
+                  stopCamera();
+                  startCamera();
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                재시작
+              </Button>
+              <Button
+                onClick={capturePhoto}
+                disabled={cameraStatus !== 'ready' || (captureMode === 'ensemble' && materialImages.length >= 3)}
+                className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold"
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                촬영
+              </Button>
+            </div>
+
+            {/* 갤러리 업로드 */}
+            <div className="pt-2 border-t border-slate-700">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple={captureMode === 'ensemble'}
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                className="w-full"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                갤러리에서 선택
+              </Button>
+            </div>
+
+            {/* 촬영 모드 선택 */}
+            <div className="pt-2 border-t border-slate-700 space-y-2">
+              <p className="text-xs font-semibold text-slate-300">촬영 모드</p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    setCaptureMode('single');
+                    setMaterialImages([]);
+                    setMaterialPreviews([]);
+                  }}
+                  variant={captureMode === 'single' ? 'default' : 'outline'}
+                  className="flex-1 text-xs"
+                >
+                  <Camera className="w-3 h-3 mr-1" />
+                  단일 촬영
+                </Button>
+                <Button
+                  onClick={() => {
+                    setCaptureMode('ensemble');
+                    setMaterialImages([]);
+                    setMaterialPreviews([]);
+                  }}
+                  variant={captureMode === 'ensemble' ? 'default' : 'outline'}
+                  className="flex-1 text-xs"
+                >
+                  <Layers className="w-3 h-3 mr-1" />
+                  다중 촬영
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
