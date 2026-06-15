@@ -20,7 +20,7 @@ from contextlib import asynccontextmanager
 
 import numpy as np
 import cv2
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -129,7 +129,10 @@ async def health_check():
 
 
 @app.post("/api/match/single")
-async def match_single(image: UploadFile = File(..., description="검색할 자재 이미지 (JPG/PNG)")):
+async def match_single(
+    image: UploadFile = File(..., description="검색할 자재 이미지 (JPG/PNG)"),
+    skip_preprocessing: bool = Form(False, description="전처리 건너뛰기 (제품 이미지 직접 검색 시 True)"),
+):
     """
     단일 이미지로 유사 자재를 검색합니다.
     
@@ -143,21 +146,44 @@ async def match_single(image: UploadFile = File(..., description="검색할 자�
     tmp_path = None
     try:
         tmp_path = save_upload_to_temp(image)
-        result = matcher.search_by_image(tmp_path, top_k=5)
 
-        if not result["success"]:
-            return JSONResponse(status_code=400, content={
-                "success": False,
-                "error": result.get("error", "검색 실패"),
-            })
+        if skip_preprocessing:
+            # 전처리 없이 직접 벡터 추출 및 검색 (제품 이미지 직접 업로드 시)
+            import cv2, numpy as np
+            img_bgr = cv2.imread(tmp_path)
+            if img_bgr is None:
+                return JSONResponse(status_code=400, content={"success": False, "error": "이미지를 읽을 수 없습니다."})
+            # 중앙 정사각 크롭 + 224x224 리사이즈
+            h, w = img_bgr.shape[:2]
+            min_dim = min(h, w)
+            sx, sy = (w - min_dim) // 2, (h - min_dim) // 2
+            cropped = img_bgr[sy:sy+min_dim, sx:sx+min_dim]
+            resized = cv2.resize(cropped, (224, 224), interpolation=cv2.INTER_AREA)
+            rgb_img = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+            # 벡터 추출
+            vector = matcher.extractor.extract_vector(rgb_img)
+            # FAISS 검색
+            from config import MIN_SIMILARITY_THRESHOLD
+            search_results = matcher.search_engine.search_similar(vector, top_k=5)
+            if not search_results or search_results[0].get("similarity_score", 0) < MIN_SIMILARITY_THRESHOLD:
+                return {"success": True, "fallback_required": True, "results": search_results, "message": "유사 자재를 찾지 못했습니다."}
+            return {"success": True, "fallback_required": False, "results": search_results, "message": "검색 성공"}
+        else:
+            result = matcher.search_by_image(tmp_path, top_k=5)
 
-        # Fallback 이미지를 base64로 인코딩하여 반환
-        if result.get("fallback_required") and result.get("fallback_image_path"):
-            result["fallback_image_base64"] = encode_image_to_base64(result["fallback_image_path"])
-            cleanup_temp_files(result["fallback_image_path"])
-            result.pop("fallback_image_path", None)
+            if not result["success"]:
+                return JSONResponse(status_code=400, content={
+                    "success": False,
+                    "error": result.get("error", "검색 실패"),
+                })
 
-        return result
+            # Fallback 이미지를 base64로 인코딩하여 반환
+            if result.get("fallback_required") and result.get("fallback_image_path"):
+                result["fallback_image_base64"] = encode_image_to_base64(result["fallback_image_path"])
+                cleanup_temp_files(result["fallback_image_path"])
+                result.pop("fallback_image_path", None)
+
+            return result
 
     except Exception as e:
         logger.error(f"단일 검색 오류: {e}")

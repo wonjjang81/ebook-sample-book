@@ -22,7 +22,7 @@ VECTOR_META_PATH = os.path.join(DATA_DIR, "vector_meta.json")
 
 # ─── AI 모델 설정 ─────────────────────────────────────────────────────────────
 MODEL_INPUT_SIZE  = (224, 224)   # 모델 입력 이미지 크기 (width, height)
-FEATURE_DIM       = 1280         # MobileNetV3-Large 특징 벡터 차원 수 (classifier[:-1] 기준)
+FEATURE_DIM       = 1280         # MobileNetV3-Large 특징 벡터 차원 수 (classifier[:-1] 기준 실측값: 1280차원)
 TOP_K_RESULTS     = 5            # 유사도 검색 결과 상위 N개
 MIN_SIMILARITY_THRESHOLD = 0.65  # 이 점수 미만이면 로컬 검색 실패로 간주하고 인터넷 검색 제안
 
