@@ -1,7 +1,6 @@
 import { ReactNode, useState, createContext, useContext } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 
 interface SidebarContextType {
   sidebarOpen: boolean;
@@ -25,12 +24,10 @@ interface LayoutProps {
 
 export function MainLayout({ children, sidebar }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
-    // localStorage에서 사이드바 상태 복원
     const saved = localStorage.getItem('sidebarOpen');
     return saved !== null ? JSON.parse(saved) : true;
   });
 
-  // 사이드바 상태 변경 시 localStorage에 저장
   const handleToggleSidebar = () => {
     setSidebarOpen((prev: boolean) => {
       const newState = !prev;
@@ -41,30 +38,38 @@ export function MainLayout({ children, sidebar }: LayoutProps) {
 
   return (
     <SidebarContext.Provider value={{ sidebarOpen }}>
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen bg-background overflow-hidden">
         {/* Sidebar */}
         {sidebar && (
           <aside
             className={cn(
-              'bg-sidebar text-sidebar-foreground transition-all duration-300 overflow-hidden flex flex-col',
-              sidebarOpen ? 'fixed inset-y-0 left-0 z-40 w-64 md:relative md:flex-shrink-0' : 'w-20 flex-shrink-0'
+              'bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out flex flex-col flex-shrink-0 relative z-40',
+              sidebarOpen
+                ? 'fixed inset-y-0 left-0 z-40 w-60 md:relative md:w-60'
+                : 'w-14 md:w-14'
             )}
           >
-            {/* Sidebar Header with Toggle */}
+            {/* Sidebar Header */}
             <div className={cn(
-              'flex items-center justify-between border-b border-sidebar-border transition-all duration-300',
-              sidebarOpen ? 'p-4' : 'p-2'
+              'flex items-center border-b border-sidebar-border h-14 flex-shrink-0',
+              sidebarOpen ? 'px-4 justify-between' : 'px-0 justify-center'
             )}>
               {sidebarOpen && (
-                <h1 className="text-lg font-bold text-sidebar-foreground truncate">
-                  자재 샘플북
-                </h1>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0">
+                    <Layers className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm font-bold text-sidebar-foreground tracking-tight truncate">
+                    자재 샘플북
+                  </span>
+                </div>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={handleToggleSidebar}
-                className={cn('p-0 flex-shrink-0', sidebarOpen ? 'h-8 w-8' : 'h-10 w-10')}
+                className={cn(
+                  'flex items-center justify-center rounded-lg transition-colors hover:bg-sidebar-accent text-sidebar-foreground/60 hover:text-sidebar-foreground flex-shrink-0',
+                  sidebarOpen ? 'w-7 h-7' : 'w-10 h-10'
+                )}
                 title={sidebarOpen ? '메뉴 닫기' : '메뉴 열기'}
               >
                 {sidebarOpen ? (
@@ -72,7 +77,7 @@ export function MainLayout({ children, sidebar }: LayoutProps) {
                 ) : (
                   <ChevronRight className="w-4 h-4" />
                 )}
-              </Button>
+              </button>
             </div>
 
             {/* Sidebar Content */}
@@ -85,15 +90,14 @@ export function MainLayout({ children, sidebar }: LayoutProps) {
         {/* Overlay for mobile */}
         {sidebar && sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            className="fixed inset-0 bg-black/40 z-30 md:hidden backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-auto min-w-0 md:min-w-0">
-          {/* Content */}
-          <div className="flex-1 overflow-auto">
+        <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="flex-1 overflow-auto scrollbar-thin">
             {children}
           </div>
         </main>
@@ -108,8 +112,9 @@ export function SidebarContent({ children, className }: { children: ReactNode; c
   return (
     <div
       className={cn(
-        'flex flex-col h-full gap-6 transition-all duration-300',
-        sidebarOpen ? 'p-6' : 'p-2'
+        'flex flex-col h-full transition-all duration-300',
+        sidebarOpen ? 'px-3 py-3' : 'px-1 py-3',
+        className
       )}
     >
       {children}
@@ -125,7 +130,7 @@ export function SidebarHeader({ children, className }: { children: ReactNode; cl
   }
 
   return (
-    <div className={cn('border-b border-sidebar-border pb-4', className)}>
+    <div className={cn('border-b border-sidebar-border pb-3 mb-1', className)}>
       {children}
     </div>
   );
@@ -133,7 +138,7 @@ export function SidebarHeader({ children, className }: { children: ReactNode; cl
 
 export function SidebarNav({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <nav className={cn('flex flex-col gap-2 flex-1 overflow-y-auto', className)}>
+    <nav className={cn('flex flex-col gap-0.5 flex-1 overflow-y-auto scrollbar-hide', className)}>
       {children}
     </nav>
   );
@@ -154,10 +159,11 @@ export function SidebarNavItem({
     <button
       onClick={onClick}
       className={cn(
-        'px-4 py-3 rounded-lg text-left font-medium transition-all duration-200 text-sm',
+        'w-full px-3 py-2.5 rounded-lg text-left font-medium transition-all duration-150 text-sm sidebar-item',
         active
-          ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-md'
-          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+          ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+          : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+        className
       )}
     >
       {children}

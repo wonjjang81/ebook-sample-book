@@ -440,154 +440,143 @@ function CategoryNavigation({
   const { sidebarOpen } = useSidebar();
 
   if (!sidebarOpen) {
-    // 접힌 상태: 텍스트만 표시
     return (
-      <div className="flex flex-col h-full">
-        <div className="space-y-2 px-2 scrollbar-hide overflow-y-auto flex-1">
-          <SidebarNav>
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => onCategoryClick(cat.id)}
-                className={cn(
-                  'w-full py-2 px-2 rounded-md flex items-center justify-center transition-all duration-200 border-2 font-semibold text-xs text-center',
-                  selectedCategory === cat.id
-                    ? 'bg-blue-600 text-white border-blue-700 shadow-lg hover:bg-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-400'
-                )}
-                title={cat.name}
-              >
-                <span className="line-clamp-2">{cat.name}</span>
-              </button>
-            ))}
-          </SidebarNav>
-        </div>
-
+      <div className="flex flex-col gap-1 px-1 py-1">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => onCategoryClick(cat.id)}
+            className={cn(
+              'w-full h-10 rounded-xl flex items-center justify-center transition-all duration-150 text-[10px] font-bold',
+              selectedCategory === cat.id
+                ? 'bg-sidebar-primary text-white'
+                : 'text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+            )}
+            title={cat.name}
+          >
+            <span>{cat.name.slice(0, 2)}</span>
+          </button>
+        ))}
       </div>
     );
   }
 
   // 펼친 상태: 전체 메뉴 표시
   return (
-    <div className="space-y-2 px-2 scrollbar-hide overflow-y-auto">
-      <SidebarNav>
-        {CATEGORIES.map((cat) => (
-          <div key={cat.id}>
-            <button
-              onClick={() => onCategoryClick(cat.id)}
-              className={cn(
-                'w-full py-2 px-3 rounded-md flex items-center justify-between transition-all duration-200 border-2 font-semibold text-sm',
-                selectedCategory === cat.id
-                  ? 'bg-blue-600 text-white border-blue-700 shadow-lg hover:bg-blue-700'
-                  : 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-400'
-              )}
-            >
-              <span>{cat.name}</span>
-              {expandedCategory === cat.id ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
-
-            {/* 브랜드 목록 */}
-            {expandedCategory === cat.id && (
-              <div className="ml-2 mt-1 space-y-1">
-                {cat.brands.map((brand) => (
-                  <div key={brand.name}>
-                    <button
-                      onClick={() => onBrandClick(brand.name)}
-                      className={cn(
-                        'w-full py-1 px-3 rounded text-sm flex items-center justify-between transition-colors',
-                        selectedBrand === brand.name
-                          ? 'bg-blue-100 text-blue-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      )}
-                    >
-                      <span>{brand.name}</span>
-                      {expandedBrand === `${cat.id}:${brand.name}` ? (
-                        <ChevronDown className="w-3 h-3" />
-                      ) : (
-                        <ChevronRight className="w-3 h-3" />
-                      )}
-                    </button>
-
-                    {/* 소재 유형 목록 (실크/합지 등) */}
-                    {expandedBrand === `${cat.id}:${brand.name}` && (
-                      <div className="ml-2 mt-1 space-y-1">
-                        {(brand.materialTypes ?? []).map((mt) => (
-                          <div key={mt.name}>
-                            <button
-                              onClick={() => onMaterialTypeClick(mt.name)}
-                              className={cn(
-                                'w-full py-1 px-3 rounded text-xs flex items-center justify-between transition-colors',
-                                selectedMaterialType === mt.name
-                                  ? 'bg-violet-100 text-violet-700 font-medium'
-                                  : 'text-gray-500 hover:bg-gray-100'
-                              )}
-                            >
-                              <span>{mt.name}</span>
-                              {expandedMaterialType === `${brand.name}:${mt.name}` ? (
-                                <ChevronDown className="w-3 h-3" />
-                              ) : (
-                                <ChevronRight className="w-3 h-3" />
-                              )}
-                            </button>
-                            {/* 제품군 목록 */}
-                            {expandedMaterialType === `${brand.name}:${mt.name}` && (
-                              <div className="ml-2 mt-1 space-y-1">
-                                {mt.groups.map((group) => (
-                                  <div key={group.name}>
-                                    <button
-                                      onClick={() => onGroupClick(group.name)}
-                                      className={cn(
-                                        'w-full py-1 px-3 rounded text-xs flex items-center justify-between transition-colors',
-                                        selectedGroup === group.name
-                                          ? 'bg-indigo-100 text-indigo-700 font-medium'
-                                          : 'text-gray-500 hover:bg-gray-100'
-                                      )}
-                                    >
-                                      <span>{group.name}</span>
-                                      {expandedGroup === group.name ? (
-                                        <ChevronDown className="w-3 h-3" />
-                                      ) : (
-                                        <ChevronRight className="w-3 h-3" />
-                                      )}
-                                    </button>
-                                    {/* 제품라인 목록 */}
-                                    {expandedGroup === group.name && (
-                                      <div className="ml-2 mt-1 space-y-1">
-                                        {group.lines.map((line) => (
-                                          <button
-                                            key={line}
-                                            onClick={() => onLineClick(line)}
-                                            className={cn(
-                                              'w-full py-1 px-3 rounded text-xs transition-colors',
-                                              selectedLine === line
-                                                ? 'bg-blue-200 text-blue-800 font-medium'
-                                                : 'text-gray-400 hover:bg-gray-100'
-                                            )}
-                                          >
-                                            {line}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+    <div className="space-y-0.5 overflow-y-auto scrollbar-hide">
+      {CATEGORIES.map((cat) => (
+        <div key={cat.id}>
+          {/* 카테고리 */}
+          <button
+            onClick={() => onCategoryClick(cat.id)}
+            className={cn(
+              'w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all duration-150 font-semibold text-sm',
+              selectedCategory === cat.id
+                ? 'bg-sidebar-primary text-white'
+                : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
             )}
-          </div>
-        ))}
-      </SidebarNav>
+          >
+            <span>{cat.name}</span>
+            <ChevronDown className={cn(
+              'w-3.5 h-3.5 transition-transform duration-200 opacity-60',
+              expandedCategory === cat.id ? 'rotate-0' : '-rotate-90'
+            )} />
+          </button>
+
+          {/* 브랜드 목록 */}
+          {expandedCategory === cat.id && (
+            <div className="mt-0.5 space-y-0.5">
+              {cat.brands.map((brand) => (
+                <div key={brand.name}>
+                  <button
+                    onClick={() => onBrandClick(brand.name)}
+                    className={cn(
+                      'w-full py-2 pl-5 pr-3 rounded-lg flex items-center justify-between transition-all duration-150 text-sm',
+                      selectedBrand === brand.name
+                        ? 'text-sidebar-primary-foreground font-semibold bg-sidebar-primary/30'
+                        : 'text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                    )}
+                  >
+                    <span>{brand.name}</span>
+                    <ChevronDown className={cn(
+                      'w-3 h-3 transition-transform duration-200 opacity-50',
+                      expandedBrand === `${cat.id}:${brand.name}` ? 'rotate-0' : '-rotate-90'
+                    )} />
+                  </button>
+
+                  {/* 소재 유형 */}
+                  {expandedBrand === `${cat.id}:${brand.name}` && (
+                    <div className="mt-0.5 space-y-0.5">
+                      {(brand.materialTypes ?? []).map((mt) => (
+                        <div key={mt.name}>
+                          <button
+                            onClick={() => onMaterialTypeClick(mt.name)}
+                            className={cn(
+                              'w-full py-1.5 pl-8 pr-3 rounded-lg flex items-center justify-between transition-all duration-150 text-xs',
+                              selectedMaterialType === mt.name
+                                ? 'text-sidebar-primary-foreground font-semibold bg-sidebar-primary/20'
+                                : 'text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                            )}
+                          >
+                            <span>{mt.name}</span>
+                            <ChevronDown className={cn(
+                              'w-3 h-3 transition-transform duration-200 opacity-50',
+                              expandedMaterialType === `${brand.name}:${mt.name}` ? 'rotate-0' : '-rotate-90'
+                            )} />
+                          </button>
+                          {/* 제품군 */}
+                          {expandedMaterialType === `${brand.name}:${mt.name}` && (
+                            <div className="mt-0.5 space-y-0.5">
+                              {mt.groups.map((group) => (
+                                <div key={group.name}>
+                                  <button
+                                    onClick={() => onGroupClick(group.name)}
+                                    className={cn(
+                                      'w-full py-1.5 pl-11 pr-3 rounded-lg flex items-center justify-between transition-all duration-150 text-xs',
+                                      selectedGroup === group.name
+                                        ? 'text-sidebar-primary-foreground font-medium bg-sidebar-primary/15'
+                                        : 'text-sidebar-foreground/45 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                                    )}
+                                  >
+                                    <span>{group.name}</span>
+                                    <ChevronDown className={cn(
+                                      'w-3 h-3 transition-transform duration-200 opacity-50',
+                                      expandedGroup === group.name ? 'rotate-0' : '-rotate-90'
+                                    )} />
+                                  </button>
+                                  {/* 제품라인 */}
+                                  {expandedGroup === group.name && (
+                                    <div className="mt-0.5 space-y-0.5">
+                                      {group.lines.map((line) => (
+                                        <button
+                                          key={line}
+                                          onClick={() => onLineClick(line)}
+                                          className={cn(
+                                            'w-full py-1.5 pl-14 pr-3 rounded-lg text-left text-xs transition-all duration-150',
+                                            selectedLine === line
+                                              ? 'text-white font-semibold bg-sidebar-primary'
+                                              : 'text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                                          )}
+                                        >
+                                          {line}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -1016,40 +1005,22 @@ export default function EbookViewer() {
   // 정렬 버튼 컴포넌트
   const SortButtons = ({ sort, setter }: { sort: SortState; setter: React.Dispatch<React.SetStateAction<SortState>> }) => (
     <div className="flex items-center gap-1">
-      <span className="text-xs text-muted-foreground mr-1">정렬:</span>
-      <button
-        onClick={() => toggleSort(sort, setter, 'default')}
-        className={cn(
-          'px-2 py-1 rounded text-xs font-medium transition-colors border',
-          sort.key === 'default'
-            ? 'bg-blue-600 text-white border-blue-600'
-            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600'
-        )}
-      >
-        기본
-      </button>
-      <button
-        onClick={() => toggleSort(sort, setter, 'name')}
-        className={cn(
-          'px-2 py-1 rounded text-xs font-medium transition-colors border flex items-center gap-1',
-          sort.key === 'name'
-            ? 'bg-blue-600 text-white border-blue-600'
-            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600'
-        )}
-      >
-        제품명 <SortIcon sort={sort} targetKey="name" />
-      </button>
-      <button
-        onClick={() => toggleSort(sort, setter, 'productNo')}
-        className={cn(
-          'px-2 py-1 rounded text-xs font-medium transition-colors border flex items-center gap-1',
-          sort.key === 'productNo'
-            ? 'bg-blue-600 text-white border-blue-600'
-            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600'
-        )}
-      >
-        품번 <SortIcon sort={sort} targetKey="productNo" />
-      </button>
+      <span className="text-[10px] text-muted-foreground/60 mr-1 font-medium">정렬</span>
+      {(['default', 'name', 'productNo'] as SortKey[]).map((key) => (
+        <button
+          key={key}
+          onClick={() => toggleSort(sort, setter, key)}
+          className={cn(
+            'px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all duration-150 flex items-center gap-0.5',
+            sort.key === key
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+          )}
+        >
+          {key === 'default' ? '기본' : key === 'name' ? '제품명' : '품번'}
+          {sort.key === key && <SortIcon sort={sort} targetKey={key} />}
+        </button>
+      ))}
     </div>
   );
 
@@ -1145,61 +1116,66 @@ export default function EbookViewer() {
             onGroupClick={handleGroupClick}
             onLineClick={handleLineClick}
           />
-          {/* 선택/찜한 제품 탭 - 하부 배치 */}
-          <div className="border-t border-sidebar-border px-2 py-3 mt-auto">
+          {/* 하단 액션 영역 */}
+          <div className="border-t border-sidebar-border pt-3 mt-auto space-y-1.5">
             {/* AI 검색 버튼 */}
-            <div className="mb-2">
-              <Button
-                size="sm"
-                variant="default"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => navigate('/ai-search')}
-                title="AI 자재 검색"
-              >
-                <Camera className="w-4 h-4 mr-1" />
-                <span className="text-xs">AI 검색</span>
-              </Button>
-            </div>
+            <button
+              onClick={() => navigate('/ai-search')}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-sidebar-primary/20 hover:bg-sidebar-primary text-sidebar-primary-foreground/80 hover:text-white transition-all duration-150 text-xs font-semibold"
+            >
+              <Camera className="w-4 h-4 flex-shrink-0" />
+              <span>AI 자재 검색</span>
+            </button>
+            {/* 선택 제품 */}
+            <button
+              onClick={() => setActiveTab('selected')}
+              className={cn(
+                'w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-150 text-xs font-medium',
+                activeTab === 'selected'
+                  ? 'bg-sidebar-primary text-white'
+                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5" />
+                <span>선택 제품</span>
+              </div>
+              {selectedProducts.size > 0 && (
+                <span className={cn(
+                  'px-1.5 py-0.5 rounded-md text-[10px] font-bold',
+                  activeTab === 'selected' ? 'bg-white/20' : 'bg-sidebar-accent'
+                )}>{selectedProducts.size}</span>
+              )}
+            </button>
+            {/* 찜한 제품 */}
+            <button
+              onClick={() => setActiveTab('liked')}
+              className={cn(
+                'w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-150 text-xs font-medium',
+                activeTab === 'liked'
+                  ? 'bg-rose-600 text-white'
+                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Heart className="w-3.5 h-3.5" />
+                <span>찜한 제품</span>
+              </div>
+              {likedProducts.size > 0 && (
+                <span className={cn(
+                  'px-1.5 py-0.5 rounded-md text-[10px] font-bold',
+                  activeTab === 'liked' ? 'bg-white/20' : 'bg-sidebar-accent'
+                )}>{likedProducts.size}</span>
+              )}
+            </button>
             {/* 설정 버튼 */}
-            <div className="mb-3">
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate('/settings')}
-                title="설정"
-              >
-                <Settings className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="space-y-2">
-              <button
-                onClick={() => setActiveTab('selected')}
-                className={cn(
-                  'w-full rounded transition-all font-medium text-xs flex flex-col items-center justify-center py-2',
-                  activeTab === 'selected'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-sidebar-accent text-sidebar-foreground hover:bg-blue-500 hover:text-white'
-                )}
-                title="선택한 제품"
-              >
-                <span>선택</span>
-                <span>({selectedProducts.size})</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('liked')}
-                className={cn(
-                  'w-full rounded transition-all font-medium text-xs flex flex-col items-center justify-center py-2',
-                  activeTab === 'liked'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-sidebar-accent text-sidebar-foreground hover:bg-red-500 hover:text-white'
-                )}
-                title="찜한 제품"
-              >
-                <span>찜</span>
-                <span>({likedProducts.size})</span>
-              </button>
-            </div>
+            <button
+              onClick={() => navigate('/settings')}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150 text-xs"
+            >
+              <Settings className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>설정</span>
+            </button>
           </div>
         </SidebarContent>
       }
@@ -1211,12 +1187,12 @@ export default function EbookViewer() {
           {activeTab === 'browse' && (
             <>
               {/* Header */}
-              <div className="border-b border-border bg-card p-6">
+              <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm px-6 py-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1">
-                                        {/* 1행: 브랜드 + 소재유형 */}
+                    {/* 1행: 브랜드 + 소재유형 */}
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">1</span>
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">1</span>
                       <Select value={selectedBrand || ''} onValueChange={(value) => handleBrandClick(value)}>
                         <SelectTrigger className="text-xl font-bold h-auto py-2 flex-1">
                           <SelectValue placeholder="브랜드 선택" />
@@ -1231,7 +1207,7 @@ export default function EbookViewer() {
                       </Select>
                       {selectedBrand && (
                         <>
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">2</span>
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">2</span>
                         <Select value={selectedMaterialType || ''} onValueChange={(value) => handleMaterialTypeClick(value)}>
                           <SelectTrigger className="text-xl font-bold h-auto py-2 flex-1">
                             <SelectValue placeholder="소재 유형 선택" />
@@ -1250,7 +1226,7 @@ export default function EbookViewer() {
                     {/* 2행: 제품군 + 제품라인 */}
                     {selectedMaterialType && (
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">3</span>
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/70 text-primary-foreground text-[10px] font-bold flex items-center justify-center">3</span>
                         <Select value={selectedGroup || ''} onValueChange={(value) => handleGroupClick(value)}>
                           <SelectTrigger className="text-base h-auto py-1.5 flex-1">
                             <SelectValue placeholder="제품군 선택" />
@@ -1267,7 +1243,7 @@ export default function EbookViewer() {
                         </Select>
                         {selectedGroup && (
                           <>
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">4</span>
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/70 text-primary-foreground text-[10px] font-bold flex items-center justify-center">4</span>
                           <Select value={selectedLine || ''} onValueChange={(value) => handleLineClick(value)}>
                             <SelectTrigger className="text-base h-auto py-1.5 flex-1">
                               <SelectValue placeholder="제품라인 선택" />
@@ -1287,14 +1263,14 @@ export default function EbookViewer() {
                   </div>
                 </div>
                 {/* Search Bar */}
-                <div className="mt-4 flex gap-2">
+                <div className="mt-3 flex gap-2">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       placeholder="품번이나 제품명으로 검색..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 h-9 bg-muted/50 border-transparent focus:border-primary/30 focus:bg-background rounded-xl text-sm"
                     />
                   </div>
                 </div>
@@ -1305,8 +1281,8 @@ export default function EbookViewer() {
               </div>
 
               {/* Sample Grid */}
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-5">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {filteredSamples.map((sample) => (
                     <SampleCard
                       key={sample.id}
