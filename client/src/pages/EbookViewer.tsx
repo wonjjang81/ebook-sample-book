@@ -1256,7 +1256,6 @@ export default function EbookViewer() {
           />
           {/* 하단 액션 영역 - sidebarOpen에 따라 아이콘 전용 or 전체 표시 */}
           <SidebarBottomActions
-            sidebarOpen={sidebarOpen}
             activeTab={activeTab}
             selectedCount={selectedProducts.size}
             likedCount={likedProducts.size}
