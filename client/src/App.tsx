@@ -8,6 +8,8 @@ import EbookViewer from "./pages/EbookViewer";
 import SampleDetail from "./pages/SampleDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import Settings from "./pages/Settings";
+import CameraSearch from "./pages/CameraSearch";
+import AiSearchResult from "./pages/AiSearchResult";
 
 
 function Router() {
@@ -17,6 +19,8 @@ function Router() {
       <Route path={"/sample/:id"} component={SampleDetail} />
       <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/settings"} component={Settings} />
+      <Route path={"/ai-search"} component={CameraSearch} />
+      <Route path={"/ai-search/result"} component={AiSearchResult} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

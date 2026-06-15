@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Settings, ChevronDown, ChevronRight, Download, Save, Trash2, Upload, Check, Heart, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Settings, ChevronDown, ChevronRight, Download, Save, Trash2, Upload, Check, Heart, ArrowUpDown, ArrowUp, ArrowDown, Camera } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -1147,6 +1147,19 @@ export default function EbookViewer() {
           />
           {/* 선택/찜한 제품 탭 - 하부 배치 */}
           <div className="border-t border-sidebar-border px-2 py-3 mt-auto">
+            {/* AI 검색 버튼 */}
+            <div className="mb-2">
+              <Button
+                size="sm"
+                variant="default"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => navigate('/ai-search')}
+                title="AI 자재 검색"
+              >
+                <Camera className="w-4 h-4 mr-1" />
+                <span className="text-xs">AI 검색</span>
+              </Button>
+            </div>
             {/* 설정 버튼 */}
             <div className="mb-3">
               <Button
