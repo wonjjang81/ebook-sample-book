@@ -405,6 +405,144 @@ interface Project {
   createdAt: number;
 }
 
+// 사이드바 하단 액션 컴포넌트
+function SidebarBottomActions({
+  activeTab,
+  selectedCount,
+  likedCount,
+  onAiSearch,
+  onSelected,
+  onLiked,
+  onSettings,
+}: {
+  sidebarOpen?: boolean;
+  activeTab: 'browse' | 'selected' | 'liked';
+  selectedCount: number;
+  likedCount: number;
+  onAiSearch: () => void;
+  onSelected: () => void;
+  onLiked: () => void;
+  onSettings: () => void;
+}) {
+  const { sidebarOpen } = useSidebar();
+
+  if (!sidebarOpen) {
+    // 접힌 상태: 아이콘만 표시
+    return (
+      <div className="border-t border-sidebar-border pt-2 mt-auto space-y-1">
+        <button
+          onClick={onAiSearch}
+          className="w-full h-10 flex items-center justify-center rounded-xl bg-sidebar-primary/20 hover:bg-sidebar-primary text-sidebar-primary-foreground/80 hover:text-white transition-all duration-150"
+          title="AI 자재 검색"
+        >
+          <Camera className="w-4 h-4" />
+        </button>
+        <button
+          onClick={onSelected}
+          className={cn(
+            'relative w-full h-10 flex items-center justify-center rounded-xl transition-all duration-150',
+            activeTab === 'selected'
+              ? 'bg-sidebar-primary text-white'
+              : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+          )}
+          title="선택 제품"
+        >
+          <Check className="w-4 h-4" />
+          {selectedCount > 0 && (
+            <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">
+              {selectedCount > 9 ? '9+' : selectedCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={onLiked}
+          className={cn(
+            'relative w-full h-10 flex items-center justify-center rounded-xl transition-all duration-150',
+            activeTab === 'liked'
+              ? 'bg-rose-600 text-white'
+              : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+          )}
+          title="찜한 제품"
+        >
+          <Heart className="w-4 h-4" />
+          {likedCount > 0 && (
+            <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
+              {likedCount > 9 ? '9+' : likedCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={onSettings}
+          className="w-full h-10 flex items-center justify-center rounded-xl text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150"
+          title="설정"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
+  // 펼친 상태: 아이콘 + 텍스트
+  return (
+    <div className="border-t border-sidebar-border pt-3 mt-auto space-y-1.5">
+      <button
+        onClick={onAiSearch}
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-sidebar-primary/20 hover:bg-sidebar-primary text-sidebar-primary-foreground/80 hover:text-white transition-all duration-150 text-xs font-semibold"
+      >
+        <Camera className="w-4 h-4 flex-shrink-0" />
+        <span>AI 자재 검색</span>
+      </button>
+      <button
+        onClick={onSelected}
+        className={cn(
+          'w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-150 text-xs font-medium',
+          activeTab === 'selected'
+            ? 'bg-sidebar-primary text-white'
+            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <Check className="w-3.5 h-3.5" />
+          <span>선택 제품</span>
+        </div>
+        {selectedCount > 0 && (
+          <span className={cn(
+            'px-1.5 py-0.5 rounded-md text-[10px] font-bold',
+            activeTab === 'selected' ? 'bg-white/20' : 'bg-sidebar-accent'
+          )}>{selectedCount}</span>
+        )}
+      </button>
+      <button
+        onClick={onLiked}
+        className={cn(
+          'w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-150 text-xs font-medium',
+          activeTab === 'liked'
+            ? 'bg-rose-600 text-white'
+            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <Heart className="w-3.5 h-3.5" />
+          <span>찜한 제품</span>
+        </div>
+        {likedCount > 0 && (
+          <span className={cn(
+            'px-1.5 py-0.5 rounded-md text-[10px] font-bold',
+            activeTab === 'liked' ? 'bg-white/20' : 'bg-sidebar-accent'
+          )}>{likedCount}</span>
+        )}
+      </button>
+      <button
+        onClick={onSettings}
+        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150 text-xs"
+      >
+        <Settings className="w-3.5 h-3.5 flex-shrink-0" />
+        <span>설정</span>
+      </button>
+    </div>
+  );
+}
+
 // 카테고리 네비게이션 컴포넌트
 function CategoryNavigation({
   selectedCategory,
@@ -1116,67 +1254,17 @@ export default function EbookViewer() {
             onGroupClick={handleGroupClick}
             onLineClick={handleLineClick}
           />
-          {/* 하단 액션 영역 */}
-          <div className="border-t border-sidebar-border pt-3 mt-auto space-y-1.5">
-            {/* AI 검색 버튼 */}
-            <button
-              onClick={() => navigate('/ai-search')}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-sidebar-primary/20 hover:bg-sidebar-primary text-sidebar-primary-foreground/80 hover:text-white transition-all duration-150 text-xs font-semibold"
-            >
-              <Camera className="w-4 h-4 flex-shrink-0" />
-              <span>AI 자재 검색</span>
-            </button>
-            {/* 선택 제품 */}
-            <button
-              onClick={() => setActiveTab('selected')}
-              className={cn(
-                'w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-150 text-xs font-medium',
-                activeTab === 'selected'
-                  ? 'bg-sidebar-primary text-white'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5" />
-                <span>선택 제품</span>
-              </div>
-              {selectedProducts.size > 0 && (
-                <span className={cn(
-                  'px-1.5 py-0.5 rounded-md text-[10px] font-bold',
-                  activeTab === 'selected' ? 'bg-white/20' : 'bg-sidebar-accent'
-                )}>{selectedProducts.size}</span>
-              )}
-            </button>
-            {/* 찜한 제품 */}
-            <button
-              onClick={() => setActiveTab('liked')}
-              className={cn(
-                'w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-150 text-xs font-medium',
-                activeTab === 'liked'
-                  ? 'bg-rose-600 text-white'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <Heart className="w-3.5 h-3.5" />
-                <span>찜한 제품</span>
-              </div>
-              {likedProducts.size > 0 && (
-                <span className={cn(
-                  'px-1.5 py-0.5 rounded-md text-[10px] font-bold',
-                  activeTab === 'liked' ? 'bg-white/20' : 'bg-sidebar-accent'
-                )}>{likedProducts.size}</span>
-              )}
-            </button>
-            {/* 설정 버튼 */}
-            <button
-              onClick={() => navigate('/settings')}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150 text-xs"
-            >
-              <Settings className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>설정</span>
-            </button>
-          </div>
+          {/* 하단 액션 영역 - sidebarOpen에 따라 아이콘 전용 or 전체 표시 */}
+          <SidebarBottomActions
+            sidebarOpen={sidebarOpen}
+            activeTab={activeTab}
+            selectedCount={selectedProducts.size}
+            likedCount={likedProducts.size}
+            onAiSearch={() => navigate('/ai-search')}
+            onSelected={() => setActiveTab('selected')}
+            onLiked={() => setActiveTab('liked')}
+            onSettings={() => navigate('/settings')}
+          />
         </SidebarContent>
       }
     >
