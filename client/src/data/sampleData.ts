@@ -78,6 +78,38 @@ export interface EditableSample extends Sample {
   isCustom?: boolean;
 }
 
+export interface ManagedCategory {
+  id: number;
+  name: string;
+  visible: boolean;
+  order: number;
+}
+
+const CATEGORY_STORAGE_KEY = 'ebook-managed-categories-v1';
+
+export function getManagedCategories(): ManagedCategory[] {
+  const defaults = CATEGORIES.map((category, index) => ({
+    id: category.id,
+    name: category.name,
+    visible: true,
+    order: index,
+  }));
+  try {
+    const saved = JSON.parse(localStorage.getItem(CATEGORY_STORAGE_KEY) || 'null');
+    if (!Array.isArray(saved)) return defaults;
+    return saved
+      .filter((item) => item && Number.isFinite(item.id) && typeof item.name === 'string')
+      .map((item, index) => ({ id: item.id, name: item.name, visible: item.visible !== false, order: Number.isFinite(item.order) ? item.order : index }))
+      .sort((a, b) => a.order - b.order);
+  } catch {
+    return defaults;
+  }
+}
+
+export function saveManagedCategories(categories: ManagedCategory[]) {
+  localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(categories.map((category, order) => ({ ...category, order }))));
+}
+
 // 카테고리별 샘플 데이터
 export const MOCK_SAMPLES: Record<number, Sample[]> = {
   1: [

@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { getCatalogSamples } from '@/data/sampleData';
+import { getCatalogSamples, getManagedCategories } from '@/data/sampleData';
 
 // Mock 데이터 - 5단계 계층 구조 (카테고리 > 브랜드 > 소재유형 > 제품군 > 라인)
 const CATEGORIES = [
@@ -117,6 +117,16 @@ const CATEGORIES = [
     ],
   },
 ];
+
+const getDisplayCategories = () => {
+  const managed = getManagedCategories();
+  return managed
+    .filter((item) => item.visible)
+    .map((item) => {
+      const category = CATEGORIES.find((candidate) => candidate.id === item.id);
+      return category ? { ...category, name: item.name } : { id: item.id, name: item.name, brands: [] };
+    });
+};
 
 // Mock 데이터 - 샘플
 const MOCK_SAMPLES = {
@@ -295,7 +305,7 @@ function CategoryNavigation({
       <div className="flex flex-col h-full">
         <div className="space-y-2 px-2 scrollbar-hide overflow-y-auto flex-1">
           <SidebarNav>
-            {CATEGORIES.map((cat) => (
+            {getDisplayCategories().map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => onCategoryClick(cat.id)}
@@ -321,7 +331,7 @@ function CategoryNavigation({
   return (
     <div className="space-y-2 px-2 scrollbar-hide overflow-y-auto">
       <SidebarNav>
-        {CATEGORIES.map((cat) => (
+        {getDisplayCategories().map((cat) => (
           <div key={cat.id}>
             <button
               onClick={() => onCategoryClick(cat.id)}
@@ -1284,7 +1294,7 @@ export default function EbookViewer() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">전체</SelectItem>
-                        {CATEGORIES.map((category) => (
+                        {getDisplayCategories().map((category) => (
                           <SelectItem key={category.id} value={category.id.toString()}>
                             {category.name}
                           </SelectItem>
@@ -1496,7 +1506,7 @@ export default function EbookViewer() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">전체</SelectItem>
-                        {CATEGORIES.map((category) => (
+                        {getDisplayCategories().map((category) => (
                           <SelectItem key={category.id} value={category.id.toString()}>
                             {category.name}
                           </SelectItem>
