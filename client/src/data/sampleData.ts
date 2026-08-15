@@ -72,6 +72,12 @@ export interface Sample {
   categoryId?: number;
 }
 
+export interface EditableSample extends Sample {
+  categoryId: number;
+  status: 'published' | 'draft';
+  isCustom?: boolean;
+}
+
 // 카테고리별 샘플 데이터
 export const MOCK_SAMPLES: Record<number, Sample[]> = {
   1: [
@@ -184,9 +190,71 @@ export const ALL_SAMPLES: Sample[] = Object.entries(MOCK_SAMPLES).flatMap(([catI
   samples.map((s) => ({ ...s, categoryId: Number(catId) }))
 );
 
+const CATALOG_KEY = 'ebook.catalog.samples.v1';
+const HIDDEN_KEY = 'ebook.catalog.hidden.v1';
+
+function readJson<T>(key: string, fallback: T): T {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) as T : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function getCatalogSamples(includeDrafts = false): EditableSample[] {
+  const saved = readJson<EditableSample[]>(CATALOG_KEY, []);
+  const hidden = new Set(readJson<string[]>(HIDDEN_KEY, []));
+  const savedById = new Map(saved.map((sample) => [sample.id, sample]));
+  const base = ALL_SAMPLES.map((sample) => ({
+    ...sample,
+    categoryId: sample.categoryId ?? 1,
+    status: 'published' as const,
+    ...savedById.get(sample.id),
+  }));
+  const custom = saved.filter((sample) => !ALL_SAMPLES.some((baseSample) => baseSample.id === sample.id));
+  return [...base, ...custom].filter((sample) => !hidden.has(sample.id) && (includeDrafts || sample.status === 'published'));
+}
+
+export function saveCatalogSample(sample: EditableSample): void {
+  const saved = readJson<EditableSample[]>(CATALOG_KEY, []);
+  const next = [...saved.filter((item) => item.id !== sample.id), sample];
+  localStorage.setItem(CATALOG_KEY, JSON.stringify(next));
+  const hidden = readJson<string[]>(HIDDEN_KEY, []).filter((id) => id !== sample.id);
+  localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden));
+}
+
+export function deleteCatalogSample(id: string): void {
+  const saved = readJson<EditableSample[]>(CATALOG_KEY, []).filter((sample) => sample.id !== id);
+  localStorage.setItem(CATALOG_KEY, JSON.stringify(saved));
+  const hidden = new Set(readJson<string[]>(HIDDEN_KEY, []));
+  hidden.add(id);
+  localStorage.setItem(HIDDEN_KEY, JSON.stringify(Array.from(hidden)));
+}
+
+export function exportCatalogBundle(): string {
+  return JSON.stringify({
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    samples: readJson<EditableSample[]>(CATALOG_KEY, []),
+    hiddenSampleIds: readJson<string[]>(HIDDEN_KEY, []),
+  }, null, 2);
+}
+
+export function importCatalogBundle(source: string): void {
+  const bundle = JSON.parse(source) as { version?: number; samples?: EditableSample[]; hiddenSampleIds?: string[] };
+  if (bundle.version !== 1 || !Array.isArray(bundle.samples) || !Array.isArray(bundle.hiddenSampleIds)) {
+    throw new Error('지원하지 않는 샘플북 백업 파일입니다.');
+  }
+  const valid = bundle.samples.every((sample) => typeof sample.id === 'string' && typeof sample.productNo === 'string' && typeof sample.name === 'string' && Array.isArray(sample.specs));
+  if (!valid) throw new Error('샘플 데이터 형식이 올바르지 않습니다.');
+  localStorage.setItem(CATALOG_KEY, JSON.stringify(bundle.samples));
+  localStorage.setItem(HIDDEN_KEY, JSON.stringify(bundle.hiddenSampleIds));
+}
+
 // ID로 샘플 찾기
 export function findSampleById(id: string): (Sample & { categoryId: number }) | undefined {
-  const found = ALL_SAMPLES.find((s) => s.id === id);
+  const found = getCatalogSamples(true).find((s) => s.id === id);
   if (!found) return undefined;
   return { ...found, categoryId: found.categoryId ?? 1 };
 }

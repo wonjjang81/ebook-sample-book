@@ -7,39 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Upload, Edit2, Trash2, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { CATEGORIES, deleteCatalogSample, exportCatalogBundle, getCatalogSamples, importCatalogBundle, saveCatalogSample, type EditableSample } from '@/data/sampleData';
 
 const ADMIN_MENU = [
   { id: 'samples', label: '샘플 관리' },
   { id: 'categories', label: '카테고리 관리' },
   { id: 'upload', label: 'PDF 업로드' },
   { id: 'settings', label: '설정' },
-];
-
-const MOCK_SAMPLES = [
-  {
-    id: 1,
-    productNo: '92102-1',
-    name: '프리모 실크 월페이퍼',
-    category: '도배',
-    status: 'published',
-    createdAt: '2025-05-10',
-  },
-  {
-    id: 2,
-    productNo: '92102-2',
-    name: '프리모 클래식',
-    category: '도배',
-    status: 'draft',
-    createdAt: '2025-05-12',
-  },
-  {
-    id: 3,
-    productNo: 'TILE-001',
-    name: '세라믹 타일',
-    category: '타일',
-    status: 'published',
-    createdAt: '2025-05-08',
-  },
 ];
 
 const MOCK_CATEGORIES = [
@@ -54,6 +30,58 @@ export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const [activeMenu, setActiveMenu] = useState('samples');
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [samples, setSamples] = useState(() => getCatalogSamples(true));
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ productNo: '', name: '', brand: '', line: '', categoryId: 1, specs: '', image: '', status: 'published' as 'published' | 'draft' });
+
+  const refreshSamples = () => setSamples(getCatalogSamples(true));
+  const openNewSample = () => {
+    setEditingId(null);
+    setForm({ productNo: '', name: '', brand: '', line: '', categoryId: 1, specs: '', image: '', status: 'published' });
+    setEditorOpen(true);
+  };
+  const openEditSample = (sample: EditableSample) => {
+    setEditingId(sample.id);
+    setForm({ productNo: sample.productNo, name: sample.name, brand: sample.brand, line: sample.line, categoryId: sample.categoryId, specs: sample.specs.join(', '), image: sample.image, status: sample.status });
+    setEditorOpen(true);
+  };
+  const submitSample = () => {
+    if (!form.productNo.trim() || !form.name.trim() || !form.brand.trim()) return;
+    const sample: EditableSample = {
+      id: editingId ?? `custom-${Date.now()}`,
+      productNo: form.productNo.trim(),
+      name: form.name.trim(),
+      brand: form.brand.trim(),
+      line: form.line.trim() || '기타',
+      categoryId: form.categoryId,
+      specs: form.specs.split(',').map((value) => value.trim()).filter(Boolean),
+      image: form.image.trim(),
+      status: form.status,
+      isCustom: editingId ? samples.find((sample) => sample.id === editingId)?.isCustom : true,
+    };
+    saveCatalogSample(sample);
+    refreshSamples();
+    setEditorOpen(false);
+  };
+  const downloadBackup = () => {
+    const url = URL.createObjectURL(new Blob([exportCatalogBundle()], { type: 'application/json' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `sample-book-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+  const restoreBackup = async (file?: File) => {
+    if (!file) return;
+    try {
+      importCatalogBundle(await file.text());
+      refreshSamples();
+      window.alert('샘플북 백업을 불러왔습니다.');
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : '백업 파일을 불러오지 못했습니다.');
+    }
+  };
 
   return (
     <MainLayout
@@ -108,7 +136,7 @@ export default function AdminDashboard() {
                 <h3 className="text-lg font-semibold text-foreground">
                   등록된 샘플
                 </h3>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={openNewSample}>
                   <Plus className="w-4 h-4" />
                   새 샘플 추가
                 </Button>
@@ -141,7 +169,7 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {MOCK_SAMPLES.map((sample) => (
+                        {samples.map((sample) => (
                           <tr
                             key={sample.id}
                             className="border-b border-border hover:bg-muted transition-colors"
@@ -153,9 +181,7 @@ export default function AdminDashboard() {
                               {sample.name}
                             </td>
                             <td className="py-3 px-4">
-                              <Badge variant="outline">
-                                {sample.category}
-                              </Badge>
+                              <Badge variant="outline">{CATEGORIES.find((category) => category.id === sample.categoryId)?.name ?? '기타'}</Badge>
                             </td>
                             <td className="py-3 px-4">
                               <Badge
@@ -171,7 +197,7 @@ export default function AdminDashboard() {
                               </Badge>
                             </td>
                             <td className="py-3 px-4 text-muted-foreground">
-                              {sample.createdAt}
+                              {sample.brand} · {sample.line}
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex gap-2">
@@ -179,6 +205,7 @@ export default function AdminDashboard() {
                                   size="sm"
                                   variant="ghost"
                                   className="h-8 w-8 p-0"
+                                  onClick={() => navigate(`/sample/${sample.id}`)}
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
@@ -186,6 +213,7 @@ export default function AdminDashboard() {
                                   size="sm"
                                   variant="ghost"
                                   className="h-8 w-8 p-0"
+                                  onClick={() => openEditSample(sample)}
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </Button>
@@ -193,6 +221,7 @@ export default function AdminDashboard() {
                                   size="sm"
                                   variant="ghost"
                                   className="h-8 w-8 p-0 text-destructive"
+                                  onClick={() => { if (window.confirm(`${sample.name} 샘플을 삭제하시겠습니까?`)) { deleteCatalogSample(sample.id); refreshSamples(); } }}
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
@@ -207,6 +236,23 @@ export default function AdminDashboard() {
               </Card>
             </div>
           )}
+
+          <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader><DialogTitle>{editingId ? '샘플 편집' : '새 샘플 추가'}</DialogTitle></DialogHeader>
+              <div className="grid gap-4 py-2 sm:grid-cols-2">
+                <div className="space-y-2"><Label>품번 *</Label><Input value={form.productNo} onChange={(event) => setForm({ ...form, productNo: event.target.value })} placeholder="예: 92102-1" /></div>
+                <div className="space-y-2"><Label>제품명 *</Label><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div>
+                <div className="space-y-2"><Label>브랜드 *</Label><Input value={form.brand} onChange={(event) => setForm({ ...form, brand: event.target.value })} /></div>
+                <div className="space-y-2"><Label>제품 라인</Label><Input value={form.line} onChange={(event) => setForm({ ...form, line: event.target.value })} /></div>
+                <div className="space-y-2"><Label>카테고리</Label><select value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: Number(event.target.value) })} className="h-9 w-full rounded-md border bg-background px-3">{CATEGORIES.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></div>
+                <div className="space-y-2"><Label>공개 상태</Label><select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as 'published' | 'draft' })} className="h-9 w-full rounded-md border bg-background px-3"><option value="published">공개</option><option value="draft">임시 저장</option></select></div>
+                <div className="space-y-2 sm:col-span-2"><Label>특징·사양</Label><Input value={form.specs} onChange={(event) => setForm({ ...form, specs: event.target.value })} placeholder="쉼표로 구분: 방염, 회벽 텍스처" /></div>
+                <div className="space-y-2 sm:col-span-2"><Label>이미지 경로</Label><Input value={form.image} onChange={(event) => setForm({ ...form, image: event.target.value })} placeholder="/images/wallpaper/example.jpg" /></div>
+              </div>
+              <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setEditorOpen(false)}>취소</Button><Button onClick={submitSample} disabled={!form.productNo.trim() || !form.name.trim() || !form.brand.trim()}>저장</Button></div>
+            </DialogContent>
+          </Dialog>
 
           {/* Categories Management */}
           {activeMenu === 'categories' && (
@@ -325,6 +371,17 @@ export default function AdminDashboard() {
                   </div>
 
                   <Button>저장</Button>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle>샘플북 확장·백업</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">추가·편집·삭제한 카탈로그 구성을 JSON으로 백업하거나 다른 기기에서 복원할 수 있습니다.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={downloadBackup}>편집 데이터 내보내기</Button>
+                    <Button variant="outline" onClick={() => document.getElementById('catalog-backup-input')?.click()}>백업 불러오기</Button>
+                    <input id="catalog-backup-input" hidden type="file" accept="application/json,.json" onChange={(event) => { void restoreBackup(event.target.files?.[0]); event.target.value = ''; }} />
+                  </div>
                 </CardContent>
               </Card>
             </div>

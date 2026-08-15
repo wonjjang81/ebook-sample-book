@@ -8,6 +8,7 @@ import EbookViewer from "./pages/EbookViewer";
 import SampleDetail from "./pages/SampleDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import Settings from "./pages/Settings";
+import PhotoMaterialFinder from "./pages/PhotoMaterialFinder";
 
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
       <Route path={"/sample/:id"} component={SampleDetail} />
       <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/settings"} component={Settings} />
+      <Route path={"/photo-search"} component={PhotoMaterialFinder} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

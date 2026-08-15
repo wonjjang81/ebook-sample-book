@@ -44,6 +44,8 @@ export function SampleCard({
           <img
             src={sample.image}
             alt={sample.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
           />
         ) : (
@@ -70,6 +72,8 @@ export function SampleCard({
                   : 'bg-white text-gray-700 hover:bg-blue-50'
               )}
               title="선택"
+              aria-label={`${sample.name} 선택${isSelected ? ' 해제' : ''}`}
+              aria-pressed={isSelected}
             >
               <Check className="w-4 h-4" />
             </button>
@@ -87,6 +91,8 @@ export function SampleCard({
                   : 'bg-white text-gray-700 hover:bg-red-50'
               )}
               title="찜하기"
+              aria-label={`${sample.name} 찜${isLiked ? ' 해제' : ''}`}
+              aria-pressed={isLiked}
             >
               <Heart className={cn('w-4 h-4', isLiked && 'fill-current')} />
             </button>

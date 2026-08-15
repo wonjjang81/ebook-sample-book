@@ -10,13 +10,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Settings, ChevronDown, ChevronRight, Download, Save, Trash2, Upload, Check, Heart, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Settings, Camera, SlidersHorizontal, ChevronDown, ChevronRight, Download, Save, Trash2, Upload, Check, Heart, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { getCatalogSamples } from '@/data/sampleData';
 
 // Mock 데이터 - 5단계 계층 구조 (카테고리 > 브랜드 > 소재유형 > 제품군 > 라인)
 const CATEGORIES = [
@@ -482,10 +483,25 @@ export default function EbookViewer() {
     if (current) {
       setCurrentProject(current);
     }
+    try {
+      setSelectedProducts(new Set(JSON.parse(localStorage.getItem('selectedProducts') || '[]')));
+      setLikedProducts(new Set(JSON.parse(localStorage.getItem('likedProducts') || '[]')));
+    } catch {
+      localStorage.removeItem('selectedProducts');
+      localStorage.removeItem('likedProducts');
+    }
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem('selectedProducts', JSON.stringify(Array.from(selectedProducts)));
+  }, [selectedProducts]);
+
+  useEffect(() => {
+    localStorage.setItem('likedProducts', JSON.stringify(Array.from(likedProducts)));
+  }, [likedProducts]);
+
   const currentCategory = CATEGORIES.find((c) => c.id === selectedCategory);
-  const samples = MOCK_SAMPLES[selectedCategory as keyof typeof MOCK_SAMPLES] || [];
+  const samples = getCatalogSamples().filter((sample) => sample.categoryId === selectedCategory);
   
   // 선택된 그룹에 속하는 라인 목록 계산 (5단계: materialType 경유)
   const currentGroupLines: string[] = (() => {
@@ -514,7 +530,8 @@ export default function EbookViewer() {
       // 그룹이 선택된 경우: 해당 그룹의 라인 목록으로 필터
       if (selectedGroup && currentGroupLines.length > 0 && !currentGroupLines.includes(s.line)) return false;
       if (selectedLine && s.line !== selectedLine) return false;
-      if (searchQuery && !s.productNo.includes(searchQuery) && !s.name.includes(searchQuery)) return false;
+      const query = searchQuery.trim().toLocaleLowerCase('ko-KR');
+      if (query && ![s.productNo, s.name, s.brand, s.line, ...s.specs].some((value) => value.toLocaleLowerCase('ko-KR').includes(query))) return false;
       return true;
     }),
     browseSort
@@ -541,7 +558,7 @@ export default function EbookViewer() {
   };
 
   const getSelectedProductDetails = () => {
-    const allSamples = Object.values(MOCK_SAMPLES).flat();
+    const allSamples = getCatalogSamples();
     let filtered = allSamples.filter((s) => selectedProducts.has(s.id));
     if (selectedCategoryFilter) {
       const category = CATEGORIES.find(c => c.id === selectedCategoryFilter);
@@ -554,7 +571,7 @@ export default function EbookViewer() {
   };
 
   const getLikedProductDetails = () => {
-    const allSamples = Object.values(MOCK_SAMPLES).flat();
+    const allSamples = getCatalogSamples();
     let filtered = allSamples.filter((s) => likedProducts.has(s.id));
     if (likedCategoryFilter) {
       const category = CATEGORIES.find(c => c.id === likedCategoryFilter);
@@ -1000,12 +1017,29 @@ export default function EbookViewer() {
             <div className="mb-3">
               <Button
                 size="sm"
+                className="mb-2 w-full"
+                onClick={() => navigate('/photo-search')}
+                title="사진으로 자재 찾기"
+              >
+                <Camera className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
                 variant="outline"
                 className="w-full"
                 onClick={() => navigate('/settings')}
                 title="설정"
               >
                 <Settings className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="mt-2 w-full"
+                onClick={() => navigate('/admin')}
+                title="샘플북 편집"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
               </Button>
             </div>
             <div className="space-y-2">
