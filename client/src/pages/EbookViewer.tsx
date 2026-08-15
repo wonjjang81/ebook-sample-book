@@ -10,14 +10,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Settings, Camera, SlidersHorizontal, ChevronDown, ChevronRight, Download, Save, Trash2, Upload, Check, Heart, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Settings, Camera, SlidersHorizontal, ChevronDown, ChevronRight, Download, Save, Trash2, Upload, Check, Heart, ArrowUpDown, ArrowUp, ArrowDown, Plus, Pencil, X, FolderTree } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useState, useEffect } from 'react';
+import { Label } from '@/components/ui/label';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { getCatalogSamples, getManagedCategories } from '@/data/sampleData';
+import { getCatalogSamples, getManagedCategories, saveCatalogSample, deleteCatalogSample, type EditableSample } from '@/data/sampleData';
 
 // Mock 데이터 - 5단계 계층 구조 (카테고리 > 브랜드 > 소재유형 > 제품군 > 라인)
 const CATEGORIES = [
@@ -126,6 +127,18 @@ const getDisplayCategories = () => {
       const category = CATEGORIES.find((candidate) => candidate.id === item.id);
       return category ? { ...category, name: item.name } : { id: item.id, name: item.name, brands: [] };
     });
+};
+
+type CatalogTree = typeof CATEGORIES;
+type TreeLevel = 'category' | 'brand' | 'materialType' | 'group' | 'line';
+const TREE_STORAGE_KEY = 'ebook-category-tree-v1';
+
+const loadCatalogTree = (): CatalogTree => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TREE_STORAGE_KEY) || 'null');
+    if (Array.isArray(saved) && saved.length) return saved;
+  } catch { /* 기본 구조 사용 */ }
+  return getDisplayCategories();
 };
 
 // Mock 데이터 - 샘플
@@ -267,6 +280,7 @@ interface Project {
 
 // 카테고리 네비게이션 컴포넌트
 function CategoryNavigation({
+  categories,
   selectedCategory,
   selectedBrand,
   selectedMaterialType,
@@ -282,6 +296,7 @@ function CategoryNavigation({
   onGroupClick,
   onLineClick,
 }: {
+  categories: typeof CATEGORIES;
   selectedCategory: number;
   selectedBrand: string | null;
   selectedMaterialType: string | null;
@@ -305,7 +320,7 @@ function CategoryNavigation({
       <div className="flex flex-col h-full">
         <div className="space-y-2 px-2 scrollbar-hide overflow-y-auto flex-1">
           <SidebarNav>
-            {getDisplayCategories().map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => onCategoryClick(cat.id)}
@@ -331,7 +346,7 @@ function CategoryNavigation({
   return (
     <div className="space-y-2 px-2 scrollbar-hide overflow-y-auto">
       <SidebarNav>
-        {getDisplayCategories().map((cat) => (
+        {categories.map((cat) => (
           <div key={cat.id}>
             <button
               onClick={() => onCategoryClick(cat.id)}
@@ -454,6 +469,14 @@ function CategoryNavigation({
 
 export default function EbookViewer() {
   const [, navigate] = useLocation();
+  const [catalogCategories, setCatalogCategories] = useState<CatalogTree>(() => loadCatalogTree());
+  const [structureEditMode, setStructureEditMode] = useState(false);
+  const [treeDialog, setTreeDialog] = useState<{ mode: 'add' | 'edit'; level: TreeLevel } | null>(null);
+  const [treeName, setTreeName] = useState('');
+  const [sampleEditorOpen, setSampleEditorOpen] = useState(false);
+  const [editingSampleId, setEditingSampleId] = useState<string | null>(null);
+  const [catalogRevision, setCatalogRevision] = useState(0);
+  const [sampleForm, setSampleForm] = useState({ productNo: '', name: '', specs: '', image: '' });
   const [selectedCategory, setSelectedCategory] = useState(1);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [selectedLine, setSelectedLine] = useState<string | null>(null);
@@ -510,7 +533,7 @@ export default function EbookViewer() {
     localStorage.setItem('likedProducts', JSON.stringify(Array.from(likedProducts)));
   }, [likedProducts]);
 
-  const currentCategory = CATEGORIES.find((c) => c.id === selectedCategory);
+  const currentCategory = catalogCategories.find((c) => c.id === selectedCategory);
   const samples = getCatalogSamples().filter((sample) => sample.categoryId === selectedCategory);
   
   // 선택된 그룹에 속하는 라인 목록 계산 (5단계: materialType 경유)
@@ -994,6 +1017,78 @@ export default function EbookViewer() {
     alert('새 프로젝트가 생성되었습니다.');
   };
 
+  const persistTree = (next: CatalogTree) => {
+    setCatalogCategories(next);
+    localStorage.setItem(TREE_STORAGE_KEY, JSON.stringify(next));
+  };
+  const selectedLevel: TreeLevel = selectedLine ? 'line' : selectedGroup ? 'group' : selectedMaterialType ? 'materialType' : selectedBrand ? 'brand' : 'category';
+  const selectedLevelName = selectedLine || selectedGroup || selectedMaterialType || selectedBrand || currentCategory?.name || '';
+  const nextLevel: TreeLevel | null = selectedLevel === 'category' ? 'brand' : selectedLevel === 'brand' ? 'materialType' : selectedLevel === 'materialType' ? 'group' : selectedLevel === 'group' ? 'line' : null;
+  const levelLabel: Record<TreeLevel, string> = { category: '대분류', brand: '브랜드', materialType: '소재 유형', group: '제품군', line: '제품 라인' };
+  const openTreeEditor = (mode: 'add' | 'edit', level: TreeLevel) => {
+    setTreeName(mode === 'edit' ? selectedLevelName : '');
+    setTreeDialog({ mode, level });
+  };
+  const saveTreeItem = () => {
+    if (!treeDialog || !treeName.trim()) return;
+    const name = treeName.trim();
+    const next: any = structuredClone(catalogCategories);
+    const category = next.find((item: any) => item.id === selectedCategory);
+    const brand = category?.brands.find((item: any) => item.name === selectedBrand);
+    const materialType = brand?.materialTypes.find((item: any) => item.name === selectedMaterialType);
+    const group = materialType?.groups.find((item: any) => item.name === selectedGroup);
+    if (treeDialog.level === 'category') {
+      if (treeDialog.mode === 'add') next.push({ id: Math.max(0, ...next.map((item: any) => item.id)) + 1, name, brands: [] });
+      else category.name = name;
+    } else if (treeDialog.level === 'brand') {
+      if (treeDialog.mode === 'add') category.brands.push({ name, materialTypes: [] });
+      else { brand.name = name; setSelectedBrand(name); }
+    } else if (treeDialog.level === 'materialType') {
+      if (treeDialog.mode === 'add') brand.materialTypes.push({ name, groups: [] });
+      else { materialType.name = name; setSelectedMaterialType(name); }
+    } else if (treeDialog.level === 'group') {
+      if (treeDialog.mode === 'add') materialType.groups.push({ name, lines: [] });
+      else { group.name = name; setSelectedGroup(name); }
+    } else if (treeDialog.level === 'line') {
+      if (treeDialog.mode === 'add') group.lines.push(name);
+      else { group.lines = group.lines.map((item: string) => item === selectedLine ? name : item); setSelectedLine(name); }
+    }
+    persistTree(next);
+    setTreeDialog(null);
+  };
+  const deleteTreeItem = () => {
+    if (!window.confirm(`'${selectedLevelName}' ${levelLabel[selectedLevel]}를 삭제하시겠습니까?`)) return;
+    if (selectedLevel === 'category' && samples.length) { window.alert('연결된 샘플이 있어 대분류를 삭제할 수 없습니다.'); return; }
+    const next: any = structuredClone(catalogCategories);
+    const category = next.find((item: any) => item.id === selectedCategory);
+    const brand = category?.brands.find((item: any) => item.name === selectedBrand);
+    const materialType = brand?.materialTypes.find((item: any) => item.name === selectedMaterialType);
+    const group = materialType?.groups.find((item: any) => item.name === selectedGroup);
+    if (selectedLevel === 'category') next.splice(next.findIndex((item: any) => item.id === selectedCategory), 1);
+    else if (selectedLevel === 'brand') category.brands = category.brands.filter((item: any) => item.name !== selectedBrand);
+    else if (selectedLevel === 'materialType') brand.materialTypes = brand.materialTypes.filter((item: any) => item.name !== selectedMaterialType);
+    else if (selectedLevel === 'group') materialType.groups = materialType.groups.filter((item: any) => item.name !== selectedGroup);
+    else group.lines = group.lines.filter((item: string) => item !== selectedLine);
+    persistTree(next);
+    if (selectedLevel === 'line') setSelectedLine(null); else if (selectedLevel === 'group') { setSelectedGroup(null); setSelectedLine(null); } else if (selectedLevel === 'materialType') { setSelectedMaterialType(null); setSelectedGroup(null); setSelectedLine(null); } else if (selectedLevel === 'brand') { setSelectedBrand(null); setSelectedMaterialType(null); } else if (next[0]) { setSelectedCategory(next[0].id); setExpandedCategory(next[0].id); }
+  };
+  const openNewSampleInline = () => {
+    setEditingSampleId(null);
+    setSampleForm({ productNo: '', name: '', specs: '', image: '' });
+    setSampleEditorOpen(true);
+  };
+  const openSampleInline = (sample: EditableSample) => {
+    setEditingSampleId(sample.id);
+    setSampleForm({ productNo: sample.productNo, name: sample.name, specs: sample.specs.join(', '), image: sample.image });
+    setSampleEditorOpen(true);
+  };
+  const saveSampleInline = () => {
+    if (!sampleForm.productNo.trim() || !sampleForm.name.trim() || !selectedBrand || !selectedLine) return;
+    saveCatalogSample({ id: editingSampleId ?? `custom-${Date.now()}`, productNo: sampleForm.productNo.trim(), name: sampleForm.name.trim(), brand: selectedBrand, line: selectedLine, specs: sampleForm.specs.split(',').map((item) => item.trim()).filter(Boolean), image: sampleForm.image.trim(), categoryId: selectedCategory, status: 'published', isCustom: true });
+    setCatalogRevision((value) => value + 1);
+    setSampleEditorOpen(false);
+  };
+
   return (
     <>
     <MainLayout
@@ -1006,6 +1101,7 @@ export default function EbookViewer() {
             </p>
           </div>
           <CategoryNavigation
+            categories={catalogCategories}
             selectedCategory={selectedCategory}
             selectedBrand={selectedBrand}
             selectedMaterialType={selectedMaterialType}
@@ -1092,6 +1188,11 @@ export default function EbookViewer() {
             <>
               {/* Header */}
               <div className="border-b border-border bg-card p-6">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-3">
+                  <div className="flex items-center gap-2"><FolderTree className="h-5 w-5 text-blue-700" /><div><p className="text-sm font-semibold">카테고리 빠른 관리</p><p className="text-xs text-muted-foreground">{currentCategory?.name}{selectedBrand ? ` > ${selectedBrand}` : ''}{selectedMaterialType ? ` > ${selectedMaterialType}` : ''}{selectedGroup ? ` > ${selectedGroup}` : ''}{selectedLine ? ` > ${selectedLine}` : ''}</p></div></div>
+                  <Button size="sm" variant={structureEditMode ? 'default' : 'outline'} onClick={() => setStructureEditMode((value) => !value)}><Pencil className="mr-2 h-4 w-4" />{structureEditMode ? '편집 완료' : '구조 편집'}</Button>
+                  {structureEditMode && <div className="flex w-full flex-wrap gap-2 border-t border-blue-100 pt-3"><Button size="sm" variant="outline" onClick={() => openTreeEditor('add', 'category')}><Plus className="mr-1 h-4 w-4" />대분류</Button>{nextLevel && <Button size="sm" variant="outline" onClick={() => openTreeEditor('add', nextLevel)}><Plus className="mr-1 h-4 w-4" />{levelLabel[nextLevel]}</Button>}<Button size="sm" variant="outline" onClick={() => openTreeEditor('edit', selectedLevel)}><Pencil className="mr-1 h-4 w-4" />{levelLabel[selectedLevel]} 이름</Button><Button size="sm" variant="outline" className="text-destructive" onClick={deleteTreeItem}><Trash2 className="mr-1 h-4 w-4" />삭제</Button>{selectedLine && <Button size="sm" className="ml-auto" onClick={openNewSampleInline}><Plus className="mr-1 h-4 w-4" />이 라인에 샘플 추가</Button>}</div>}
+                </div>
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1">
                                         {/* 1행: 브랜드 + 소재유형 */}
@@ -1196,9 +1297,11 @@ export default function EbookViewer() {
                       onSelect={() => toggleProductSelection(sample.id)}
                       onLike={() => toggleProductLike(sample.id)}
                       onClick={() => navigate(`/sample/${sample.id}`)}
+                      onEdit={structureEditMode && selectedLine ? () => openSampleInline(sample) : undefined}
                     />
                   ))}
                 </div>
+                {filteredSamples.length === 0 && <div className="rounded-xl border border-dashed p-12 text-center"><p className="font-semibold">이 분류에 등록된 샘플이 없습니다.</p><p className="mt-1 text-sm text-muted-foreground">최종 제품 라인을 선택하고 첫 샘플을 추가해 보세요.</p>{selectedLine && <Button className="mt-4" onClick={openNewSampleInline}><Plus className="mr-2 h-4 w-4" />샘플 추가</Button>}</div>}
               </div>
             </>
           )}
@@ -1629,6 +1732,14 @@ export default function EbookViewer() {
         </div>
       </div>
     </MainLayout>
+
+    <Dialog open={Boolean(treeDialog)} onOpenChange={(open) => { if (!open) setTreeDialog(null); }}>
+      <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{treeDialog?.mode === 'add' ? '하위 카테고리 추가' : '카테고리 이름 편집'}</DialogTitle></DialogHeader><div className="space-y-2 py-3"><Label htmlFor="tree-name">{treeDialog ? levelLabel[treeDialog.level] : ''} 이름</Label><Input id="tree-name" autoFocus value={treeName} onChange={(event) => setTreeName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') saveTreeItem(); }} placeholder="이름을 입력하세요" /><p className="text-xs text-muted-foreground">현재 위치: {currentCategory?.name}{selectedBrand ? ` > ${selectedBrand}` : ''}{selectedMaterialType ? ` > ${selectedMaterialType}` : ''}{selectedGroup ? ` > ${selectedGroup}` : ''}</p></div><div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setTreeDialog(null)}>취소</Button><Button onClick={saveTreeItem} disabled={!treeName.trim()}>저장</Button></div></DialogContent>
+    </Dialog>
+
+    <Dialog open={sampleEditorOpen} onOpenChange={setSampleEditorOpen}>
+      <DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle>{editingSampleId ? '샘플 편집' : '새 샘플 추가'}</DialogTitle></DialogHeader><div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-muted-foreground">{currentCategory?.name} &gt; {selectedBrand} &gt; {selectedMaterialType} &gt; {selectedGroup} &gt; <strong className="text-foreground">{selectedLine}</strong></div><div className="grid gap-4 py-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="inline-product-no">품번 *</Label><Input id="inline-product-no" value={sampleForm.productNo} onChange={(event) => setSampleForm({ ...sampleForm, productNo: event.target.value })} /></div><div className="space-y-2"><Label htmlFor="inline-name">제품명 *</Label><Input id="inline-name" value={sampleForm.name} onChange={(event) => setSampleForm({ ...sampleForm, name: event.target.value })} /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="inline-specs">특징·사양</Label><Input id="inline-specs" value={sampleForm.specs} onChange={(event) => setSampleForm({ ...sampleForm, specs: event.target.value })} placeholder="쉼표로 구분" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="inline-image">이미지 경로</Label><Input id="inline-image" value={sampleForm.image} onChange={(event) => setSampleForm({ ...sampleForm, image: event.target.value })} placeholder="/images/wallpaper/example.jpg" /></div></div><div className="flex justify-between gap-2"><div>{editingSampleId && <Button variant="ghost" className="text-destructive" onClick={() => { if (window.confirm('이 샘플을 삭제하시겠습니까?')) { deleteCatalogSample(editingSampleId); setCatalogRevision((value) => value + 1); setSampleEditorOpen(false); } }}><Trash2 className="mr-2 h-4 w-4" />삭제</Button>}</div><div className="flex gap-2"><Button variant="outline" onClick={() => setSampleEditorOpen(false)}>취소</Button><Button onClick={saveSampleInline} disabled={!sampleForm.productNo.trim() || !sampleForm.name.trim()}>저장</Button></div></div></DialogContent>
+    </Dialog>
 
     {/* PDF 미리보기 Dialog */}
     <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>

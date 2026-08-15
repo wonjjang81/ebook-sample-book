@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Check, Heart } from 'lucide-react';
+import { Check, Heart, Pencil } from 'lucide-react';
 
 interface SampleCardProps {
   sample: {
@@ -18,6 +18,7 @@ interface SampleCardProps {
   onSelect?: () => void;
   onLike?: () => void;
   onClick?: () => void;
+  onEdit?: () => void;
   className?: string;
 }
 
@@ -28,6 +29,7 @@ export function SampleCard({
   onSelect,
   onLike,
   onClick,
+  onEdit,
   className,
 }: SampleCardProps) {
   return (
@@ -59,6 +61,9 @@ export function SampleCard({
 
         {/* Selection/Like Buttons */}
         <div className="absolute bottom-3 right-3 flex gap-1">
+          {onEdit && (
+            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="w-8 h-8 rounded bg-slate-900/80 text-white flex items-center justify-center hover:bg-slate-900" title="샘플 편집" aria-label={`${sample.name} 편집`}><Pencil className="w-4 h-4" /></button>
+          )}
           {onSelect && (
             <button
               onClick={(e) => {
