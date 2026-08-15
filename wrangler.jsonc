@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ebook-sample-book-demo",
+  "main": "server/sites.ts",
+  "compatibility_date": "2026-08-15",
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": false
+  }
+}
