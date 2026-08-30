@@ -131,6 +131,7 @@ const getDisplayCategories = () => {
 
 type CatalogTree = typeof CATEGORIES;
 type TreeLevel = 'category' | 'brand' | 'materialType' | 'group' | 'line';
+type TreeContext = { categoryId?: number; brand?: string; materialType?: string; group?: string; line?: string };
 const TREE_STORAGE_KEY = 'ebook-category-tree-v1';
 
 const loadCatalogTree = (): CatalogTree => {
@@ -295,6 +296,9 @@ function CategoryNavigation({
   onMaterialTypeClick,
   onGroupClick,
   onLineClick,
+  onAdd,
+  onEdit,
+  onDelete,
 }: {
   categories: typeof CATEGORIES;
   selectedCategory: number;
@@ -311,6 +315,9 @@ function CategoryNavigation({
   onMaterialTypeClick: (mt: string) => void;
   onGroupClick: (group: string) => void;
   onLineClick: (line: string) => void;
+  onAdd: (level: TreeLevel, context: TreeContext) => void;
+  onEdit: (level: TreeLevel, context: TreeContext, name: string) => void;
+  onDelete: (level: TreeLevel, context: TreeContext, name: string) => void;
 }) {
   const { sidebarOpen } = useSidebar();
 
@@ -342,109 +349,53 @@ function CategoryNavigation({
     );
   }
 
-  // 펼친 상태: 전체 메뉴 표시
+  const tools = (level: TreeLevel, context: TreeContext, name: string, childLevel?: TreeLevel) => (
+    <span className="flex shrink-0 items-center gap-0.5">
+      {childLevel && <button type="button" onClick={(event) => { event.stopPropagation(); onAdd(childLevel, context); }} className="rounded p-1 text-slate-400 hover:bg-blue-100 hover:text-blue-700" title={`${name} 아래에 추가`} aria-label={`${name} 아래에 ${childLevel} 추가`}><Plus className="h-3.5 w-3.5" /></button>}
+      <button type="button" onClick={(event) => { event.stopPropagation(); onEdit(level, context, name); }} className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700" title="이름 변경" aria-label={`${name} 이름 변경`}><Pencil className="h-3.5 w-3.5" /></button>
+      <button type="button" onClick={(event) => { event.stopPropagation(); onDelete(level, context, name); }} className="rounded p-1 text-slate-400 hover:bg-red-100 hover:text-red-600" title="삭제" aria-label={`${name} 삭제`}><Trash2 className="h-3.5 w-3.5" /></button>
+    </span>
+  );
+
+  // 펼친 상태: 사이드바에서 직접 전체 구조 관리
   return (
     <div className="space-y-2 px-2 scrollbar-hide overflow-y-auto">
+      <div className="flex items-center justify-between px-1 pb-1">
+        <span className="text-xs font-semibold text-slate-500">카테고리 관리</span>
+        <Button type="button" size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" onClick={() => onAdd('category', {})}><Plus className="h-3.5 w-3.5" />대분류</Button>
+      </div>
       <SidebarNav>
         {categories.map((cat) => (
           <div key={cat.id}>
-            <button
-              onClick={() => onCategoryClick(cat.id)}
-              className={cn(
-                'w-full py-2 px-3 rounded-md flex items-center justify-between transition-all duration-200 border-2 font-semibold text-sm',
-                selectedCategory === cat.id
-                  ? 'bg-blue-600 text-white border-blue-700 shadow-lg hover:bg-blue-700'
-                  : 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-400'
-              )}
-            >
-              <span>{cat.name}</span>
-              {expandedCategory === cat.id ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
+            <div className={cn('flex items-center rounded-md border-2 pr-1 transition-colors', selectedCategory === cat.id ? 'border-blue-700 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700')}>
+              <button onClick={() => onCategoryClick(cat.id)} className="flex min-w-0 flex-1 items-center justify-between px-3 py-2 text-left text-sm font-semibold"><span className="truncate">{cat.name}</span>{expandedCategory === cat.id ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}</button>
+              {tools('category', { categoryId: cat.id }, cat.name, 'brand')}
+            </div>
 
             {/* 브랜드 목록 */}
             {expandedCategory === cat.id && (
               <div className="ml-2 mt-1 space-y-1">
                 {cat.brands.map((brand) => (
                   <div key={brand.name}>
-                    <button
-                      onClick={() => onBrandClick(brand.name)}
-                      className={cn(
-                        'w-full py-1 px-3 rounded text-sm flex items-center justify-between transition-colors',
-                        selectedBrand === brand.name
-                          ? 'bg-blue-100 text-blue-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      )}
-                    >
-                      <span>{brand.name}</span>
-                      {expandedBrand === `${cat.id}:${brand.name}` ? (
-                        <ChevronDown className="w-3 h-3" />
-                      ) : (
-                        <ChevronRight className="w-3 h-3" />
-                      )}
-                    </button>
+                    <div className={cn('flex items-center rounded pr-1', selectedBrand === brand.name ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100')}><button onClick={() => { if (selectedCategory !== cat.id) onCategoryClick(cat.id); onBrandClick(brand.name); }} className="flex min-w-0 flex-1 items-center justify-between px-3 py-1 text-left text-sm"><span className="truncate">{brand.name}</span>{expandedBrand === `${cat.id}:${brand.name}` ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}</button>{tools('brand', { categoryId: cat.id, brand: brand.name }, brand.name, 'materialType')}</div>
 
                     {/* 소재 유형 목록 (실크/합지 등) */}
                     {expandedBrand === `${cat.id}:${brand.name}` && (
                       <div className="ml-2 mt-1 space-y-1">
                         {(brand.materialTypes ?? []).map((mt) => (
                           <div key={mt.name}>
-                            <button
-                              onClick={() => onMaterialTypeClick(mt.name)}
-                              className={cn(
-                                'w-full py-1 px-3 rounded text-xs flex items-center justify-between transition-colors',
-                                selectedMaterialType === mt.name
-                                  ? 'bg-violet-100 text-violet-700 font-medium'
-                                  : 'text-gray-500 hover:bg-gray-100'
-                              )}
-                            >
-                              <span>{mt.name}</span>
-                              {expandedMaterialType === `${brand.name}:${mt.name}` ? (
-                                <ChevronDown className="w-3 h-3" />
-                              ) : (
-                                <ChevronRight className="w-3 h-3" />
-                              )}
-                            </button>
+                            <div className={cn('flex items-center rounded pr-1', selectedMaterialType === mt.name ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100')}><button onClick={() => onMaterialTypeClick(mt.name)} className="flex min-w-0 flex-1 items-center justify-between px-3 py-1 text-left text-xs"><span className="truncate">{mt.name}</span>{expandedMaterialType === `${brand.name}:${mt.name}` ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}</button>{tools('materialType', { categoryId: cat.id, brand: brand.name, materialType: mt.name }, mt.name, 'group')}</div>
                             {/* 제품군 목록 */}
                             {expandedMaterialType === `${brand.name}:${mt.name}` && (
                               <div className="ml-2 mt-1 space-y-1">
                                 {mt.groups.map((group) => (
                                   <div key={group.name}>
-                                    <button
-                                      onClick={() => onGroupClick(group.name)}
-                                      className={cn(
-                                        'w-full py-1 px-3 rounded text-xs flex items-center justify-between transition-colors',
-                                        selectedGroup === group.name
-                                          ? 'bg-indigo-100 text-indigo-700 font-medium'
-                                          : 'text-gray-500 hover:bg-gray-100'
-                                      )}
-                                    >
-                                      <span>{group.name}</span>
-                                      {expandedGroup === group.name ? (
-                                        <ChevronDown className="w-3 h-3" />
-                                      ) : (
-                                        <ChevronRight className="w-3 h-3" />
-                                      )}
-                                    </button>
+                                    <div className={cn('flex items-center rounded pr-1', selectedGroup === group.name ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100')}><button onClick={() => onGroupClick(group.name)} className="flex min-w-0 flex-1 items-center justify-between px-3 py-1 text-left text-xs"><span className="truncate">{group.name}</span>{expandedGroup === group.name ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}</button>{tools('group', { categoryId: cat.id, brand: brand.name, materialType: mt.name, group: group.name }, group.name, 'line')}</div>
                                     {/* 제품라인 목록 */}
                                     {expandedGroup === group.name && (
                                       <div className="ml-2 mt-1 space-y-1">
                                         {group.lines.map((line) => (
-                                          <button
-                                            key={line}
-                                            onClick={() => onLineClick(line)}
-                                            className={cn(
-                                              'w-full py-1 px-3 rounded text-xs transition-colors',
-                                              selectedLine === line
-                                                ? 'bg-blue-200 text-blue-800 font-medium'
-                                                : 'text-gray-400 hover:bg-gray-100'
-                                            )}
-                                          >
-                                            {line}
-                                          </button>
+                                          <div key={line} className={cn('flex items-center rounded pr-1', selectedLine === line ? 'bg-blue-200 text-blue-800' : 'text-gray-400 hover:bg-gray-100')}><button onClick={() => onLineClick(line)} className="min-w-0 flex-1 truncate px-3 py-1 text-left text-xs">{line}</button>{tools('line', { categoryId: cat.id, brand: brand.name, materialType: mt.name, group: group.name, line }, line)}</div>
                                         ))}
                                       </div>
                                     )}
@@ -470,7 +421,6 @@ function CategoryNavigation({
 export default function EbookViewer() {
   const [, navigate] = useLocation();
   const [catalogCategories, setCatalogCategories] = useState<CatalogTree>(() => loadCatalogTree());
-  const [structureEditMode, setStructureEditMode] = useState(false);
   const [treeDialog, setTreeDialog] = useState<{ mode: 'add' | 'edit'; level: TreeLevel } | null>(null);
   const [treeName, setTreeName] = useState('');
   const [sampleEditorOpen, setSampleEditorOpen] = useState(false);
@@ -1029,6 +979,21 @@ export default function EbookViewer() {
     setTreeName(mode === 'edit' ? selectedLevelName : '');
     setTreeDialog({ mode, level });
   };
+  const selectTreeContext = (context: TreeContext) => {
+    if (context.categoryId != null) { setSelectedCategory(context.categoryId); setExpandedCategory(context.categoryId); }
+    setSelectedBrand(context.brand ?? null);
+    setExpandedBrand(context.brand && context.categoryId != null ? `${context.categoryId}:${context.brand}` : null);
+    setSelectedMaterialType(context.materialType ?? null);
+    setExpandedMaterialType(context.brand && context.materialType ? `${context.brand}:${context.materialType}` : null);
+    setSelectedGroup(context.group ?? null);
+    setExpandedGroup(context.group ?? null);
+    setSelectedLine(context.line ?? null);
+  };
+  const openSidebarTreeEditor = (mode: 'add' | 'edit', level: TreeLevel, context: TreeContext, name = '') => {
+    selectTreeContext(context);
+    setTreeName(mode === 'edit' ? name : '');
+    setTreeDialog({ mode, level });
+  };
   const saveTreeItem = () => {
     if (!treeDialog || !treeName.trim()) return;
     const name = treeName.trim();
@@ -1056,21 +1021,27 @@ export default function EbookViewer() {
     persistTree(next);
     setTreeDialog(null);
   };
-  const deleteTreeItem = () => {
-    if (!window.confirm(`'${selectedLevelName}' ${levelLabel[selectedLevel]}를 삭제하시겠습니까?`)) return;
-    if (selectedLevel === 'category' && samples.length) { window.alert('연결된 샘플이 있어 대분류를 삭제할 수 없습니다.'); return; }
+  const deleteTreeItem = (level = selectedLevel, context: TreeContext = { categoryId: selectedCategory, brand: selectedBrand ?? undefined, materialType: selectedMaterialType ?? undefined, group: selectedGroup ?? undefined, line: selectedLine ?? undefined }, name = selectedLevelName) => {
+    if (!window.confirm(`'${name}' ${levelLabel[level]}를 삭제하시겠습니까?`)) return;
+    const sourceCategory = catalogCategories.find((item) => item.id === context.categoryId);
+    const sourceBrand = sourceCategory?.brands.find((item) => item.name === context.brand);
+    const sourceMaterial = sourceBrand?.materialTypes.find((item) => item.name === context.materialType);
+    const sourceGroup = sourceMaterial?.groups.find((item) => item.name === context.group);
+    const descendantLines = level === 'line' ? [context.line] : level === 'group' ? sourceGroup?.lines : level === 'materialType' ? sourceMaterial?.groups.flatMap((item) => item.lines) : undefined;
+    const linkedSamples = getCatalogSamples(true).filter((sample) => sample.categoryId === context.categoryId && (!context.brand || sample.brand === context.brand) && (!descendantLines || descendantLines.includes(sample.line)));
+    if (linkedSamples.length) { window.alert(`연결된 샘플 ${linkedSamples.length}개가 있어 삭제할 수 없습니다. 샘플을 먼저 이동하거나 삭제해 주세요.`); return; }
     const next: any = structuredClone(catalogCategories);
-    const category = next.find((item: any) => item.id === selectedCategory);
-    const brand = category?.brands.find((item: any) => item.name === selectedBrand);
-    const materialType = brand?.materialTypes.find((item: any) => item.name === selectedMaterialType);
-    const group = materialType?.groups.find((item: any) => item.name === selectedGroup);
-    if (selectedLevel === 'category') next.splice(next.findIndex((item: any) => item.id === selectedCategory), 1);
-    else if (selectedLevel === 'brand') category.brands = category.brands.filter((item: any) => item.name !== selectedBrand);
-    else if (selectedLevel === 'materialType') brand.materialTypes = brand.materialTypes.filter((item: any) => item.name !== selectedMaterialType);
-    else if (selectedLevel === 'group') materialType.groups = materialType.groups.filter((item: any) => item.name !== selectedGroup);
-    else group.lines = group.lines.filter((item: string) => item !== selectedLine);
+    const category = next.find((item: any) => item.id === context.categoryId);
+    const brand = category?.brands.find((item: any) => item.name === context.brand);
+    const materialType = brand?.materialTypes.find((item: any) => item.name === context.materialType);
+    const group = materialType?.groups.find((item: any) => item.name === context.group);
+    if (level === 'category') next.splice(next.findIndex((item: any) => item.id === context.categoryId), 1);
+    else if (level === 'brand') category.brands = category.brands.filter((item: any) => item.name !== context.brand);
+    else if (level === 'materialType') brand.materialTypes = brand.materialTypes.filter((item: any) => item.name !== context.materialType);
+    else if (level === 'group') materialType.groups = materialType.groups.filter((item: any) => item.name !== context.group);
+    else group.lines = group.lines.filter((item: string) => item !== context.line);
     persistTree(next);
-    if (selectedLevel === 'line') setSelectedLine(null); else if (selectedLevel === 'group') { setSelectedGroup(null); setSelectedLine(null); } else if (selectedLevel === 'materialType') { setSelectedMaterialType(null); setSelectedGroup(null); setSelectedLine(null); } else if (selectedLevel === 'brand') { setSelectedBrand(null); setSelectedMaterialType(null); } else if (next[0]) { setSelectedCategory(next[0].id); setExpandedCategory(next[0].id); }
+    if (level === 'line') setSelectedLine(null); else if (level === 'group') { setSelectedGroup(null); setSelectedLine(null); } else if (level === 'materialType') { setSelectedMaterialType(null); setSelectedGroup(null); setSelectedLine(null); } else if (level === 'brand') { setSelectedBrand(null); setSelectedMaterialType(null); } else if (next[0]) { setSelectedCategory(next[0].id); setExpandedCategory(next[0].id); }
   };
   const openNewSampleInline = () => {
     setEditingSampleId(null);
@@ -1116,6 +1087,9 @@ export default function EbookViewer() {
             onMaterialTypeClick={handleMaterialTypeClick}
             onGroupClick={handleGroupClick}
             onLineClick={handleLineClick}
+            onAdd={(level, context) => openSidebarTreeEditor('add', level, context)}
+            onEdit={(level, context, name) => openSidebarTreeEditor('edit', level, context, name)}
+            onDelete={(level, context, name) => deleteTreeItem(level, context, name)}
           />
           {/* 선택/찜한 제품 탭 - 하부 배치 */}
           <div className="border-t border-sidebar-border px-2 py-3 mt-auto">
@@ -1190,8 +1164,7 @@ export default function EbookViewer() {
               <div className="border-b border-border bg-card p-6">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-3">
                   <div className="flex items-center gap-2"><FolderTree className="h-5 w-5 text-blue-700" /><div><p className="text-sm font-semibold">카테고리 빠른 관리</p><p className="text-xs text-muted-foreground">{currentCategory?.name}{selectedBrand ? ` > ${selectedBrand}` : ''}{selectedMaterialType ? ` > ${selectedMaterialType}` : ''}{selectedGroup ? ` > ${selectedGroup}` : ''}{selectedLine ? ` > ${selectedLine}` : ''}</p></div></div>
-                  <Button size="sm" variant={structureEditMode ? 'default' : 'outline'} onClick={() => setStructureEditMode((value) => !value)}><Pencil className="mr-2 h-4 w-4" />{structureEditMode ? '편집 완료' : '구조 편집'}</Button>
-                  {structureEditMode && <div className="flex w-full flex-wrap gap-2 border-t border-blue-100 pt-3"><Button size="sm" variant="outline" onClick={() => openTreeEditor('add', 'category')}><Plus className="mr-1 h-4 w-4" />대분류</Button>{nextLevel && <Button size="sm" variant="outline" onClick={() => openTreeEditor('add', nextLevel)}><Plus className="mr-1 h-4 w-4" />{levelLabel[nextLevel]}</Button>}<Button size="sm" variant="outline" onClick={() => openTreeEditor('edit', selectedLevel)}><Pencil className="mr-1 h-4 w-4" />{levelLabel[selectedLevel]} 이름</Button><Button size="sm" variant="outline" className="text-destructive" onClick={deleteTreeItem}><Trash2 className="mr-1 h-4 w-4" />삭제</Button>{selectedLine && <Button size="sm" className="ml-auto" onClick={openNewSampleInline}><Plus className="mr-1 h-4 w-4" />이 라인에 샘플 추가</Button>}</div>}
+                  <div className="flex items-center gap-2"><span className="hidden text-xs text-muted-foreground md:inline">분류 편집은 왼쪽 사이드바에서 바로 할 수 있습니다.</span>{selectedLine && <Button size="sm" onClick={openNewSampleInline}><Plus className="mr-1 h-4 w-4" />샘플 추가</Button>}</div>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1">
@@ -1297,7 +1270,7 @@ export default function EbookViewer() {
                       onSelect={() => toggleProductSelection(sample.id)}
                       onLike={() => toggleProductLike(sample.id)}
                       onClick={() => navigate(`/sample/${sample.id}`)}
-                      onEdit={structureEditMode && selectedLine ? () => openSampleInline(sample) : undefined}
+                      onEdit={selectedLine ? () => openSampleInline(sample) : undefined}
                     />
                   ))}
                 </div>
