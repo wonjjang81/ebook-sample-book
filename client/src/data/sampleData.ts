@@ -480,6 +480,138 @@ const WALLGUARD_SAMPLES: Sample[] = WALLGUARD_SERIES.flatMap(({ family, series, 
   })
 );
 
+const FACADE_COLLECTION_DESCRIPTION = '파사드는 깊이감 있는 표면과 스톤·패브릭·플라스터의 질감을 섬세하게 구현한 신한벽지의 하이엔드 실크벽지 컬렉션입니다. 저채도 컬러와 향상된 커버력, 생활 내구성, 부직포 원지의 시공성을 함께 고려했습니다.';
+
+const FACADE_COMMON_DETAILS = [
+  { title: '깊이감이 돋보이는 텍스처', description: '입체감 있는 엠보와 특수 효과로 스톤, 패브릭, 플라스터 등 소재 고유의 질감을 섬세하게 표현했습니다.' },
+  { title: '일반 벽지 대비 향상된 커버력', description: '벽면의 흠집이나 요철을 보다 효과적으로 감춰 마감 후 벽면이 깔끔하고 고르게 보이도록 돕습니다.' },
+  { title: '강화된 마찰 내구성', description: '카탈로그 기준 일반 벽지보다 마찰 견뢰도를 2~3배 높여 일상적인 마찰과 오염에 대한 관리 부담을 줄였습니다.' },
+  { title: '부직포 원지의 시공 효율', description: '전 제품에 부직포 원지를 적용해 초배와 이음매 작업을 단순화하고, 카탈로그 시험 기준 시공 시간을 약 21% 줄일 수 있도록 설계했습니다.' },
+  { title: '트렌드에 맞춘 하이엔드 컬러', description: '따뜻한 웜톤과 고급스러운 저채도 색상으로 주거 및 상업 공간에 차분하고 깊이 있는 배경을 제공합니다.' },
+  { title: '국내외 기준으로 확인한 품질', description: '카탈로그에 제시된 KS-QEI, GREENGUARD Gold, OEKO-TEX STANDARD 100 등 품질·환경 관련 인증 정보를 바탕으로 안전성과 품질을 관리합니다.' },
+];
+
+const FACADE_SERIES = [
+  { family: '마티스 플러스', series: '2023', design: 'Matisse plus', variants: ['1', '2', '3'] },
+  { family: '샤갈 플러스', series: '2022', design: 'Chagall plus', variants: ['1', '2', '3', '4'] },
+  { family: '바그너 플러스', series: '2021', design: 'Wagner plus', variants: ['1', '2'] },
+  { family: '마티스', series: '2020', design: 'Matisse', variants: ['1', '2', '3', '4', '5'] },
+  { family: '티치아노', series: '2019', design: 'Tiziano', variants: ['1', '2', '3', '4'] },
+  { family: '샤갈', series: '2018', design: 'Chagall', variants: ['1', '2', '3', '4', '5'] },
+  { family: '라파엘로', series: '2017', design: 'Raffaello', variants: ['1', '2', '3'] },
+  { family: '다빈치', series: '2016', design: 'Da Vinci', variants: ['1', '2', '3', '4'] },
+  { family: '아그네스', series: '2015', design: 'Agnes', variants: ['1', '2', '3', '4'] },
+  { family: '테라코타', series: '2014', design: 'Terracotta', variants: ['1', '2', '3'] },
+  { family: '베르메르', series: '2013', design: 'Vermeer', variants: ['1', '2'] },
+  { family: '바그너', series: '2012', design: 'Wagner', variants: ['1', '2', '3', '4', '5'] },
+  { family: '에드가', series: '2011', design: 'Edgar', variants: ['1', '2', '3', '4'] },
+  { family: '프란츠', series: '2010', design: 'Franz', variants: ['1', '2', '3'] },
+  { family: '카미유', series: '2009', design: 'Camille', variants: ['1'] },
+  { family: '루벤스', series: '2008', design: 'Rubens', variants: ['1', '2', '3', '4'] },
+  { family: '고야', series: '2007', design: 'Goya', variants: ['1', '2', '3', '4'] },
+  { family: '카를', series: '2006', design: 'Carl', variants: ['1', '2', '3', '4'] },
+  { family: '샤르댕', series: '2005', design: 'Chardin', variants: ['1', '2'] },
+  { family: '클로드', series: '2004', design: 'Claude', variants: ['1', '2', '3', '4'] },
+  { family: '트래버틴', series: '2003', design: 'Travertine', variants: ['1', '2'] },
+  { family: '피사로', series: '2002', design: 'Pissarro', variants: ['1', '2', '3'] },
+  { family: '로시니', series: '2001', design: 'Rossini', variants: ['1', '2'] },
+] as const;
+
+const FACADE_SAMPLES: Sample[] = FACADE_SERIES.flatMap(({ family, series, design, variants }) =>
+  variants.map((variant) => {
+    const productNo = `${series}-${variant}`;
+    return {
+      id: `facade-${productNo}`,
+      productNo,
+      name: `파사드 ${design} ${productNo}`,
+      brand: '신한',
+      line: family,
+      materialType: '실크',
+      collection: '파사드',
+      specs: ['하이엔드 실크벽지', family, '부직포 원지', '향상된 커버력', '강화 내구성'],
+      image: '',
+      description: FACADE_COLLECTION_DESCRIPTION,
+      detailSections: [...FACADE_COMMON_DETAILS],
+      sourceLabel: '신한벽지 FACADE 공개 카탈로그',
+    };
+  })
+);
+
+const LIVING_COLLECTION_DESCRIPTION = '리빙은 회벽과 스톤, 패브릭, 포인트 패턴을 폭넓게 구성한 신한벽지의 프리미엄 실크벽지 컬렉션입니다. 입체적인 리얼 텍스처와 관리가 편리한 내오염 제품, 차분한 컬러 구성을 통해 일상 공간을 편안하고 풍성하게 연출합니다.';
+
+const LIVING_COMMON_DETAILS = [
+  { title: '특수 기법으로 완성한 리얼 텍스처', description: '한층 더 도톰해진 두께감과 생생한 입체 질감으로 회벽, 스톤, 패브릭의 소재감을 자연스럽게 표현했습니다.' },
+  { title: '생활 흔적을 줄이는 손쉬운 관리', description: '내오염 기능 제품을 포함해 생활 속 가벼운 오염을 닦아내기 쉽고 깨끗한 벽면 관리에 도움을 줍니다.' },
+  { title: '풍성한 디자인 선택', description: '무지와 회벽, 스톤, 패브릭부터 공간의 분위기를 살리는 포인트 패턴과 천장지까지 다양하게 구성했습니다.' },
+  { title: '리얼한 질감의 회벽 패턴', description: '질감이 주는 차분한 입체감으로 공간의 분위기를 담담하고 세련되게 완성합니다.' },
+  { title: '섬세한 짜임의 패브릭 패턴', description: '시선을 부드럽게 감싸는 직조 질감과 따뜻한 색감으로 편안한 배경을 제공합니다.' },
+  { title: '단조로움에 더하는 포인트', description: '기하학, 자연 모티프, 클래식 디자인을 활용해 공간의 무드를 또렷하게 만드는 포인트 선택지를 제공합니다.' },
+];
+
+const LIVING_SERIES = [
+  { family: '프라임 스톤', series: '70302', variants: ['1', '2', '3', '4', '5', '6', '7', '8'] },
+  { family: '피노스톤', series: '70301', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '하드데코', series: '70300', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '누벨스톤', series: '70299', variants: ['1', '2', '3', '4', '5'] },
+  { family: '스톤 그리드', series: '70298', variants: ['1', '2', '3', '4'] },
+  { family: '듀라월', series: '70297', variants: ['1', '2', '3', '4', '5'] },
+  { family: '클레이어', series: '70296', variants: ['1', '2', '3', '4', '5', '6', '7', '8', '9'] },
+  { family: '바클', series: '70295', variants: ['1', '2', '3', '4', '5'] },
+  { family: '올레프', series: '70293', variants: ['1', '2', '3', '4'] },
+  { family: '오브위브', series: '70294', variants: ['1', '2', '3', '4', '5'] },
+  { family: '그레인월', series: '70292', variants: ['1', '2', '3'] },
+  { family: '트리프', series: '70291', variants: ['1', '2'] },
+  { family: '마블스', series: '70290', variants: ['1', '2'] },
+  { family: '리로월', series: '70289', variants: ['1'] },
+  { family: '빈티지 가든', series: '70288', variants: ['1', '2'] },
+  { family: '블로시아', series: '70287', variants: ['1'] },
+  { family: '데오도르', series: '70244', variants: ['1'] },
+  { family: '로코코', series: '70277', variants: ['1'] },
+  { family: '데이브', series: '70285', variants: ['1'] },
+  { family: '노블스톤', series: '70286', variants: ['1', '2', '3'] },
+  { family: '스타코', series: '70283', variants: ['1', '2', '4', '5'] },
+  { family: '데코월', series: '70276', variants: ['1', '2'] },
+  { family: '플레인', series: '70213', variants: ['10'] },
+  { family: '샌드월', series: '70274', variants: ['1', '2'] },
+  { family: '부클레', series: '70282', variants: ['1', '2', '3'] },
+  { family: '코듀로이', series: '70271', variants: ['1', '2'] },
+  { family: '콜린트', series: '70245', variants: ['1', '2', '5'] },
+  { family: '제프리', series: '70254', variants: ['1', '5', '6'] },
+  { family: '레이븐', series: '70281', variants: ['1', '2'] },
+  { family: '옥스퍼드', series: '70272', variants: ['1', '2'] },
+  { family: '캐시미어', series: '70278', variants: ['1', '2', '3'] },
+  { family: '앙고라', series: '70279', variants: ['1', '2', '5'] },
+  { family: '더블니트', series: '70280', variants: ['1'] },
+  { family: '밀레', series: '70253', variants: ['1'] },
+  { family: '케일', series: '70233', variants: ['1'] },
+  { family: '헬리오', series: '70243', variants: ['1'] },
+  { family: '벨벳', series: '70269', variants: ['2'] },
+  { family: '브린', series: '70221', variants: ['2'] },
+  { family: '천장지', series: 'C8123', variants: ['1', '2'] },
+  { family: '천장지', series: 'C8052', variants: ['1', '3'] },
+  { family: '천장지', series: 'C9643', variants: ['11', '10'] },
+] as const;
+
+const LIVING_SAMPLES: Sample[] = LIVING_SERIES.flatMap(({ family, series, variants }) =>
+  variants.map((variant) => {
+    const productNo = `${series}-${variant}`;
+    return {
+      id: `living-${productNo.toLowerCase()}`,
+      productNo,
+      name: `리빙 ${family} ${productNo}`,
+      brand: '신한',
+      line: family,
+      materialType: '실크',
+      collection: '리빙',
+      specs: ['프리미엄 실크벽지', family, '리얼 텍스처', '다양한 디자인', ...(family === '천장지' ? ['천장용'] : [])],
+      image: '',
+      description: LIVING_COLLECTION_DESCRIPTION,
+      detailSections: [...LIVING_COMMON_DETAILS],
+      sourceLabel: '신한벽지 Living 공개 카탈로그',
+    };
+  })
+);
+
 export function ensureCatalogCollections<T>(source: T): T {
   const next: any = structuredClone(source);
   const wallpaper = next.find((category: any) => category.id === 1 || category.name === '도배');
@@ -528,6 +660,16 @@ export function ensureCatalogCollections<T>(source: T): T {
     const existingWallguard = shinhanSilk.groups?.find((group: any) => group.name === wallguard.name);
     if (existingWallguard) existingWallguard.lines = Array.from(new Set([...(existingWallguard.lines ?? []), ...wallguard.lines]));
     else shinhanSilk.groups = [wallguard, ...(shinhanSilk.groups ?? [])];
+
+    const facade = { name: '파사드', lines: FACADE_SERIES.map((series) => series.family) };
+    const existingFacade = shinhanSilk.groups?.find((group: any) => group.name === facade.name);
+    if (existingFacade) existingFacade.lines = Array.from(new Set([...(existingFacade.lines ?? []), ...facade.lines]));
+    else shinhanSilk.groups = [facade, ...(shinhanSilk.groups ?? [])];
+
+    const living = { name: '리빙', lines: Array.from(new Set(LIVING_SERIES.map((series) => series.family))) };
+    const existingLiving = shinhanSilk.groups?.find((group: any) => group.name === living.name);
+    if (existingLiving) existingLiving.lines = Array.from(new Set([...(existingLiving.lines ?? []), ...living.lines]));
+    else shinhanSilk.groups = [living, ...(shinhanSilk.groups ?? [])];
   }
 
   return next;
@@ -537,7 +679,7 @@ export function sampleMatchesCatalogSelection(
   sample: Sample,
   selection: { group?: string; line?: string },
 ): boolean {
-  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드'].includes(selection.group) && sample.collection !== selection.group) return false;
+  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드', '파사드', '리빙'].includes(selection.group) && sample.collection !== selection.group) return false;
   if (selection.line && sample.line !== selection.line) return false;
   return true;
 }
@@ -550,6 +692,8 @@ export const MOCK_SAMPLES: Record<number, Sample[]> = {
     ...ARTBOOK_SAMPLES,
     ...WIDE_PAPER_SAMPLES,
     ...WALLGUARD_SAMPLES,
+    ...FACADE_SAMPLES,
+    ...LIVING_SAMPLES,
     // --- 프리모 컬렉션 ---
     { id: '1-1', productNo: '92102-1', name: '프리모 크랙 화이트', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-1.jpg' },
     { id: '1-2', productNo: '92102-2', name: '프리모 크랙 아이보리', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-2.jpg' },
