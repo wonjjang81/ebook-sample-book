@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Settings, Camera, SlidersHorizontal, ChevronDown, ChevronRight, Download, Save, Trash2, Upload, Check, Heart, ArrowUpDown, ArrowUp, ArrowDown, Plus, Pencil, X, FolderTree } from 'lucide-react';
+import { Search, Settings, Camera, SlidersHorizontal, ChevronDown, ChevronRight, Download, Save, Trash2, Upload, Check, Heart, ArrowUpDown, ArrowUp, ArrowDown, Plus, Pencil, X } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -1186,86 +1186,8 @@ export default function EbookViewer() {
             <>
               {/* Header */}
               <div className="border-b border-border bg-card p-6">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-3">
-                  <div className="flex items-center gap-2"><FolderTree className="h-5 w-5 text-blue-700" /><div><p className="text-sm font-semibold">카테고리 빠른 관리</p><p className="text-xs text-muted-foreground">{currentCategory?.name}{selectedBrand ? ` > ${selectedBrand}` : ''}{selectedMaterialType ? ` > ${selectedMaterialType}` : ''}{selectedGroup ? ` > ${selectedGroup}` : ''}{selectedLine ? ` > ${selectedLine}` : ''}</p></div></div>
-                  <div className="flex items-center gap-2"><span className="hidden text-xs text-muted-foreground md:inline">{categoryEditEnabled ? '사이드바 카테고리 편집이 활성화되었습니다.' : '사이드바에서 편집 활성화 후 카테고리를 관리할 수 있습니다.'}</span>{selectedLine && <Button size="sm" onClick={openNewSampleInline}><Plus className="mr-1 h-4 w-4" />샘플 추가</Button>}</div>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1">
-                                        {/* 1행: 브랜드 + 소재유형 */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">1</span>
-                      <Select value={selectedBrand || ''} onValueChange={(value) => handleBrandClick(value)}>
-                        <SelectTrigger className="text-xl font-bold h-auto py-2 flex-1">
-                          <SelectValue placeholder="브랜드 선택" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {currentCategory?.brands.map((brand) => (
-                            <SelectItem key={brand.name} value={brand.name}>
-                              {brand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {selectedBrand && (
-                        <>
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">2</span>
-                        <Select value={selectedMaterialType || ''} onValueChange={(value) => handleMaterialTypeClick(value)}>
-                          <SelectTrigger className="text-xl font-bold h-auto py-2 flex-1">
-                            <SelectValue placeholder="소재 유형 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {((currentCategory?.brands.find((b) => b.name === selectedBrand) as any)?.materialTypes ?? []).map((mt: any) => (
-                              <SelectItem key={mt.name} value={mt.name}>
-                                {mt.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        </>
-                      )}
-                    </div>
-                    {/* 2행: 제품군 + 제품라인 */}
-                    {selectedMaterialType && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">3</span>
-                        <Select value={selectedGroup || ''} onValueChange={(value) => handleGroupClick(value)}>
-                          <SelectTrigger className="text-base h-auto py-1.5 flex-1">
-                            <SelectValue placeholder="제품군 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(((currentCategory?.brands.find((b) => b.name === selectedBrand) as any)
-                              ?.materialTypes ?? []).find((mt: any) => mt.name === selectedMaterialType)
-                              ?.groups ?? []).map((group: any) => (
-                                <SelectItem key={group.name} value={group.name}>
-                                  {group.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                        {selectedGroup && (
-                          <>
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">4</span>
-                          <Select value={selectedLine || ''} onValueChange={(value) => handleLineClick(value)}>
-                            <SelectTrigger className="text-base h-auto py-1.5 flex-1">
-                              <SelectValue placeholder="제품라인 선택" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(currentGroupLines).map((line) => (
-                                <SelectItem key={line} value={line}>
-                                  {line}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
                 {/* Search Bar */}
-                <div className="mt-4 flex gap-2">
+                <div className="flex gap-2">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
