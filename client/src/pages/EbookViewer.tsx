@@ -296,6 +296,8 @@ function CategoryNavigation({
   onMaterialTypeClick,
   onGroupClick,
   onLineClick,
+  editEnabled,
+  onEditEnabledChange,
   onAdd,
   onEdit,
   onDelete,
@@ -315,6 +317,8 @@ function CategoryNavigation({
   onMaterialTypeClick: (mt: string) => void;
   onGroupClick: (group: string) => void;
   onLineClick: (line: string) => void;
+  editEnabled: boolean;
+  onEditEnabledChange: (enabled: boolean) => void;
   onAdd: (level: TreeLevel, context: TreeContext) => void;
   onEdit: (level: TreeLevel, context: TreeContext, name: string) => void;
   onDelete: (level: TreeLevel, context: TreeContext, name: string) => void;
@@ -349,21 +353,33 @@ function CategoryNavigation({
     );
   }
 
-  const tools = (level: TreeLevel, context: TreeContext, name: string, childLevel?: TreeLevel) => (
+  const tools = (level: TreeLevel, context: TreeContext, name: string, childLevel?: TreeLevel) => editEnabled ? (
     <span className="flex shrink-0 items-center gap-0.5">
       {childLevel && <button type="button" onClick={(event) => { event.stopPropagation(); onAdd(childLevel, context); }} className="rounded p-1 text-slate-400 hover:bg-blue-100 hover:text-blue-700" title={`${name} 아래에 추가`} aria-label={`${name} 아래에 ${childLevel} 추가`}><Plus className="h-3.5 w-3.5" /></button>}
       <button type="button" onClick={(event) => { event.stopPropagation(); onEdit(level, context, name); }} className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700" title="이름 변경" aria-label={`${name} 이름 변경`}><Pencil className="h-3.5 w-3.5" /></button>
       <button type="button" onClick={(event) => { event.stopPropagation(); onDelete(level, context, name); }} className="rounded p-1 text-slate-400 hover:bg-red-100 hover:text-red-600" title="삭제" aria-label={`${name} 삭제`}><Trash2 className="h-3.5 w-3.5" /></button>
     </span>
-  );
+  ) : null;
 
   // 펼친 상태: 사이드바에서 직접 전체 구조 관리
   return (
     <div className="space-y-2 px-2 scrollbar-hide overflow-y-auto">
-      <div className="flex items-center justify-between px-1 pb-1">
-        <span className="text-xs font-semibold text-slate-500">카테고리 관리</span>
-        <Button type="button" size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" onClick={() => onAdd('category', {})}><Plus className="h-3.5 w-3.5" />대분류</Button>
+      <div className="flex items-center justify-between gap-2 px-1 pb-1">
+        <span className="text-xs font-semibold text-slate-500">카테고리</span>
+        <Button
+          type="button"
+          size="sm"
+          variant={editEnabled ? 'default' : 'outline'}
+          className="h-7 gap-1 px-2 text-xs"
+          onClick={() => onEditEnabledChange(!editEnabled)}
+          aria-pressed={editEnabled}
+        >
+          {editEnabled ? <><Check className="h-3.5 w-3.5" />편집 종료</> : <><Pencil className="h-3.5 w-3.5" />편집 활성화</>}
+        </Button>
       </div>
+      {editEnabled && (
+        <Button type="button" size="sm" variant="outline" className="h-7 w-full gap-1 text-xs" onClick={() => onAdd('category', {})}><Plus className="h-3.5 w-3.5" />대분류 추가</Button>
+      )}
       <SidebarNav>
         {categories.map((cat) => (
           <div key={cat.id}>
@@ -421,6 +437,7 @@ function CategoryNavigation({
 export default function EbookViewer() {
   const [, navigate] = useLocation();
   const [catalogCategories, setCatalogCategories] = useState<CatalogTree>(() => loadCatalogTree());
+  const [categoryEditEnabled, setCategoryEditEnabled] = useState(false);
   const [treeDialog, setTreeDialog] = useState<{ mode: 'add' | 'edit'; level: TreeLevel } | null>(null);
   const [treeName, setTreeName] = useState('');
   const [sampleEditorOpen, setSampleEditorOpen] = useState(false);
@@ -1087,6 +1104,8 @@ export default function EbookViewer() {
             onMaterialTypeClick={handleMaterialTypeClick}
             onGroupClick={handleGroupClick}
             onLineClick={handleLineClick}
+            editEnabled={categoryEditEnabled}
+            onEditEnabledChange={setCategoryEditEnabled}
             onAdd={(level, context) => openSidebarTreeEditor('add', level, context)}
             onEdit={(level, context, name) => openSidebarTreeEditor('edit', level, context, name)}
             onDelete={(level, context, name) => deleteTreeItem(level, context, name)}
@@ -1164,7 +1183,7 @@ export default function EbookViewer() {
               <div className="border-b border-border bg-card p-6">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-3">
                   <div className="flex items-center gap-2"><FolderTree className="h-5 w-5 text-blue-700" /><div><p className="text-sm font-semibold">카테고리 빠른 관리</p><p className="text-xs text-muted-foreground">{currentCategory?.name}{selectedBrand ? ` > ${selectedBrand}` : ''}{selectedMaterialType ? ` > ${selectedMaterialType}` : ''}{selectedGroup ? ` > ${selectedGroup}` : ''}{selectedLine ? ` > ${selectedLine}` : ''}</p></div></div>
-                  <div className="flex items-center gap-2"><span className="hidden text-xs text-muted-foreground md:inline">분류 편집은 왼쪽 사이드바에서 바로 할 수 있습니다.</span>{selectedLine && <Button size="sm" onClick={openNewSampleInline}><Plus className="mr-1 h-4 w-4" />샘플 추가</Button>}</div>
+                  <div className="flex items-center gap-2"><span className="hidden text-xs text-muted-foreground md:inline">{categoryEditEnabled ? '사이드바 카테고리 편집이 활성화되었습니다.' : '사이드바에서 편집 활성화 후 카테고리를 관리할 수 있습니다.'}</span>{selectedLine && <Button size="sm" onClick={openNewSampleInline}><Plus className="mr-1 h-4 w-4" />샘플 추가</Button>}</div>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1">
