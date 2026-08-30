@@ -345,6 +345,89 @@ const ARTBOOK_SAMPLES: Sample[] = ARTBOOK_SERIES.flatMap(({ family, series, desi
   })
 );
 
+const WIDE_PAPER_COLLECTION_DESCRIPTION = '트랜디는 자연에서 영감을 받은 디자인과 다채로운 색감, 생활 친화적인 기능을 담은 개나리벽지의 프리미엄 광폭합지 컬렉션입니다. 포근한 패브릭부터 깔끔한 플라스터와 키즈·타일·천장 디자인까지 폭넓게 구성했습니다.';
+
+const WIDE_PAPER_COMMON_DETAILS = [
+  { title: '피톤치드로 더 쾌적하게', description: '피톤치드층이 실내 유해 물질 감소를 돕고 항균·항진균, 스트레스 완화와 심신 안정에 도움을 주도록 설계했습니다.' },
+  { title: '수성잉크를 사용한 친환경 합지', description: '발암물질 부담을 줄인 수성인쇄층과 항균코팅층을 적용해 생활 공간에서 안심하고 사용할 수 있도록 했습니다.' },
+  { title: '오염방지로 더 깨끗하게', description: '일상에서 생기는 오염을 보다 편리하게 관리할 수 있도록 표면 기능을 강화했습니다.' },
+  { title: '검증된 친환경 품질', description: '환경표지 인증과 친환경 건축자재 인증을 받았으며 납·카드뮴·크롬·수은 등 8대 중금속 불검출 시험을 통과했습니다.' },
+];
+
+const WIDE_PAPER_FAMILY_DETAILS: Record<string, Array<{ title: string; description: string }>> = {
+  패브릭: [{ title: '자연스러운 직물 질감', description: '섬세한 직물 조직과 부드러운 색감으로 포근하고 편안한 분위기를 만듭니다.' }],
+  '플라스터·페인트': [{ title: '깔끔하고 모던한 표면', description: '스투코, 샌드 플라스터, 페인트와 스톤의 질감을 합지에 담아 차분하고 현대적인 공간을 완성합니다.' }],
+  디자인: [{ title: '공간에 활력을 더하는 패턴', description: '플라워, 우드랜드와 장식 패턴을 다양한 색상으로 구성해 포인트 공간에 잘 어울립니다.' }],
+  키즈: [{ title: '행복이 머무는 아이 공간', description: '부드러운 색과 친근한 패턴으로 아이 방에 편안하고 즐거운 분위기를 더합니다.' }],
+  타일패턴: [{ title: '간편하게 연출하는 타일 감성', description: '타일의 정돈된 패턴을 광폭합지로 표현해 주방과 포인트 벽면을 손쉽게 연출합니다.' }],
+  천장용: [{ title: '밝고 단정한 천장 마감', description: '벽면 제품과 자연스럽게 조화되는 천장 전용 디자인으로 공간 전체의 완성도를 높입니다.' }],
+};
+
+const WIDE_PAPER_SERIES = [
+  { family: '패브릭', series: '39394', design: 'Bloom Cotton', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '패브릭', series: '39393', design: 'Eden Fabric', variants: ['1', '2', '3', '4', '5', '6', '7'] },
+  { family: '패브릭', series: '39392', design: 'Silhouette Cotton', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터·페인트', series: '39391', design: 'European Stucco', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터·페인트', series: '39390', design: 'Sand Plaster', variants: ['1', '2', '3', '4'] },
+  { family: '플라스터·페인트', series: '39389', design: 'Art Stucco', variants: ['1', '2', '3'] },
+  { family: '디자인', series: '39388', design: 'Forest Woodland', variants: ['1', '2'] },
+  { family: '디자인', series: '39387', design: 'Floral Whisper', variants: ['1'] },
+  { family: '디자인', series: '28352', design: 'La Beauté', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '패브릭', series: '39374', design: 'Soft Wall', variants: ['1', '2', '3', '4', '6', '7'] },
+  { family: '패브릭', series: '28372', design: 'Twisted Texture', variants: ['1', '2', '3', '4', '5', '6', '7'] },
+  { family: '패브릭', series: '39386', design: 'Trendy Fabric', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '패브릭', series: '39385', design: 'Luxe Fleece Touch', variants: ['1', '2', '3', '4'] },
+  { family: '패브릭', series: '39384', design: 'Trendy Fabric', variants: ['1'] },
+  { family: '패브릭', series: '39383', design: 'Trendy Fabric', variants: ['1', '2', '3', '4', '5'] },
+  { family: '패브릭', series: '28371', design: 'Raw Urban Touch', variants: ['1', '2', '3', '4', '5', '9'] },
+  { family: '패브릭', series: '39369', design: 'Trendy Fabric', variants: ['1', '2', '3', '5', '6'] },
+  { family: '플라스터·페인트', series: '39382', design: 'Ceramic Wall Serenity', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터·페인트', series: '39371', design: 'Real Paint', variants: ['1', '2', '3', '4', '6', '7', '8', '9'] },
+  { family: '플라스터·페인트', series: '39381', design: 'Real Travertine', variants: ['1', '2'] },
+  { family: '플라스터·페인트', series: '39380', design: 'Line Plaster', variants: ['1'] },
+  { family: '플라스터·페인트', series: '39379', design: 'Rugged Earth Texture', variants: ['1', '2'] },
+  { family: '패브릭', series: '39378', design: 'Zen Fabric', variants: ['1', '2'] },
+  { family: '플라스터·페인트', series: '39377', design: 'Cloud Marble', variants: ['1', '2'] },
+  { family: '플라스터·페인트', series: '28336', design: 'Trendy Texture', variants: ['1', '2'] },
+  { family: '패브릭', series: '39372', design: 'Cozy Grey Hues', variants: ['1', '2', '3'] },
+  { family: '플라스터·페인트', series: '28348', design: 'Trendy Texture', variants: ['2', '3'] },
+  { family: '플라스터·페인트', series: '28366', design: 'Trendy Texture', variants: ['1', '2', '3', '4'] },
+  { family: '플라스터·페인트', series: '28370', design: 'Trendy Texture', variants: ['1', '2', '5'] },
+  { family: '플라스터·페인트', series: '28365', design: 'Simple Painting', variants: ['1', '2', '3', '5'] },
+  { family: '플라스터·페인트', series: '28349', design: 'Trendy Texture', variants: ['1', '2', '7'] },
+  { family: '플라스터·페인트', series: '28364', design: 'Realistic Stucco Paint', variants: ['1', '2', '3', '5', '6'] },
+  { family: '플라스터·페인트', series: '28363', design: 'Rough-Soft Harmony', variants: ['1', '2', '3', '4'] },
+  { family: '키즈', series: '39376', design: 'Cozy Stripe', variants: ['1'] },
+  { family: '키즈', series: '39375', design: 'Kids Wallpaper', variants: ['1', '2'] },
+  { family: '타일패턴', series: '64023', design: 'Tile Wallpaper', variants: ['1'] },
+  { family: '타일패턴', series: '64022', design: 'Tile Wallpaper', variants: ['1'] },
+  { family: '타일패턴', series: '64014', design: 'Tile Wallpaper', variants: ['1', '2'] },
+  { family: '타일패턴', series: '64024', design: 'Tile Wallpaper', variants: ['1', '2'] },
+  { family: '천장용', series: '39034', design: 'Ceiling', variants: ['1'] },
+  { family: '천장용', series: '29080', design: 'Ceiling', variants: ['1', '2'] },
+  { family: '천장용', series: '28293', design: 'Ceiling', variants: ['1', '2'] },
+] as const;
+
+const WIDE_PAPER_SAMPLES: Sample[] = WIDE_PAPER_SERIES.flatMap(({ family, series, design, variants }) =>
+  variants.map((variant) => {
+    const productNo = `${series}-${variant}`;
+    return {
+      id: `wide-paper-${productNo}`,
+      productNo,
+      name: `트랜디 ${design} ${productNo}`,
+      brand: '개나리',
+      line: family,
+      materialType: '합지',
+      collection: '광폭합지',
+      specs: ['프리미엄 광폭합지', family, '피톤치드', '수성잉크', '오염방지'],
+      image: '',
+      description: WIDE_PAPER_COLLECTION_DESCRIPTION,
+      detailSections: [...WIDE_PAPER_COMMON_DETAILS, ...(WIDE_PAPER_FAMILY_DETAILS[family] ?? [])],
+      sourceLabel: '개나리벽지 TRENDY 카탈로그',
+    };
+  })
+);
+
 export function ensureCatalogCollections<T>(source: T): T {
   const next: any = structuredClone(source);
   const wallpaper = next.find((category: any) => category.id === 1 || category.name === '도배');
@@ -372,6 +455,16 @@ export function ensureCatalogCollections<T>(source: T): T {
     else silk.groups = [collection, ...(silk.groups ?? [])];
   });
 
+  let paper = gaenari.materialTypes?.find((materialType: any) => materialType.name === '합지');
+  if (!paper) {
+    paper = { name: '합지', groups: [] };
+    gaenari.materialTypes = [...(gaenari.materialTypes ?? []), paper];
+  }
+  const widePaper = { name: '광폭합지', lines: ['패브릭', '플라스터·페인트', '디자인', '키즈', '타일패턴', '천장용'] };
+  const existingWidePaper = paper.groups?.find((group: any) => group.name === widePaper.name);
+  if (existingWidePaper) existingWidePaper.lines = Array.from(new Set([...(existingWidePaper.lines ?? []), ...widePaper.lines]));
+  else paper.groups = [widePaper, ...(paper.groups ?? [])];
+
   return next;
 }
 
@@ -379,7 +472,7 @@ export function sampleMatchesCatalogSelection(
   sample: Sample,
   selection: { group?: string; line?: string },
 ): boolean {
-  if (selection.group && ['프리모', '로하스+', '아트북'].includes(selection.group) && sample.collection !== selection.group) return false;
+  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지'].includes(selection.group) && sample.collection !== selection.group) return false;
   if (selection.line && sample.line !== selection.line) return false;
   return true;
 }
@@ -390,6 +483,7 @@ export const MOCK_SAMPLES: Record<number, Sample[]> = {
     ...PRIMO_SAMPLES,
     ...LOHAS_SAMPLES,
     ...ARTBOOK_SAMPLES,
+    ...WIDE_PAPER_SAMPLES,
     // --- 프리모 컬렉션 ---
     { id: '1-1', productNo: '92102-1', name: '프리모 크랙 화이트', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-1.jpg' },
     { id: '1-2', productNo: '92102-2', name: '프리모 크랙 아이보리', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-2.jpg' },
