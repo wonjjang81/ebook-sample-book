@@ -270,6 +270,81 @@ const LOHAS_SAMPLES: Sample[] = LOHAS_SERIES.flatMap(({ family, series, design, 
   })
 );
 
+const ARTBOOK_COLLECTION_DESCRIPTION = '아트북은 자연에서 영감을 받은 텍스처와 편안한 색감으로 일상 공간을 완성하는 개나리벽지의 친환경 실크벽지 컬렉션입니다. 패브릭·플라스터·페인트를 비롯한 다채로운 표면 표현과 기능성 디자인을 함께 담았습니다.';
+
+const ARTBOOK_COMMON_DETAILS = [
+  { title: '옥수수 유래 PLA 식물성 코팅', description: '천연 옥수수에서 유래한 식물성 수지(PLA)를 표면 코팅에 적용한 친환경 벽지입니다.' },
+  { title: '곰팡이 발생 억제', description: '항곰팡이 수지층을 적용해 곰팡이 발생을 억제하고 실내 공간을 위생적으로 유지하도록 돕습니다.' },
+  { title: '6년 연속 UL 그린가드 골드', description: '저방출 제품을 위한 UL 그린가드 골드 기준을 6년 연속 충족한 컬렉션입니다.' },
+  { title: '생활 공간을 고려한 안전성', description: '환경표지 인증, 대한아토피협회 추천, KCL 안전성 테스트를 거쳤으며 납·수은·카드뮴 등 8대 중금속 불검출 기준을 확인했습니다.' },
+];
+
+const ARTBOOK_FAMILY_DETAILS: Record<string, Array<{ title: string; description: string }>> = {
+  패브릭: [{ title: '섬세한 패브릭 조직', description: '직물의 짜임과 부드러운 촉감을 입체적으로 표현해 따뜻하고 편안한 공간을 연출합니다.' }],
+  플라스터: [{ title: '자연스러운 플라스터 표면', description: '회벽과 미네랄에서 영감을 받은 불규칙한 결을 담아 차분하면서도 깊이 있는 벽면을 완성합니다.' }],
+  페인트: [{ title: '매트한 페인트 감성', description: '정돈된 페인트 표면과 크림 화이트·베이지 계열의 편안한 색상으로 다양한 인테리어에 자연스럽게 어울립니다.' }],
+  텍스처: [{ title: '공간에 깊이를 더하는 텍스처', description: '자연 소재의 결을 현대적으로 재해석한 표면과 절제된 색감으로 벽면에 은은한 입체감을 더합니다.' }],
+  기능성: [{ title: '빛을 담는 축광 포인트', description: '빛을 저장했다가 어두운 환경에서 은은하게 발광하는 축광 디자인으로 특별한 포인트 공간을 연출합니다.' }],
+  피너츠: [{ title: '피너츠 캐릭터 디자인', description: '스누피와 피너츠 캐릭터를 활용한 친근한 패턴으로 아이 방과 포인트 공간에 즐거운 분위기를 더합니다.' }],
+  천장용: [{ title: '벽과 천장의 조화', description: '밝고 단정한 천장 전용 디자인으로 아트북 벽면 제품과 자연스럽게 이어지는 마감을 제공합니다.' }],
+};
+
+const ARTBOOK_SERIES = [
+  { family: '패브릭', series: '57233', design: 'Real Fabric Touch', variants: ['1', '2', '3', '4', '5', '6', '7'] },
+  { family: '패브릭', series: '57232', design: 'Simple Fabric', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '플라스터', series: '57231', design: 'Plaster Wall', variants: ['1', '2', '3', '4', '5', '6', '7'] },
+  { family: '플라스터', series: '57230', design: 'Plaster Texture', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '플라스터', series: '57229', design: 'Raw Plaster', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '플라스터', series: '57228', design: 'Crafted Wall', variants: ['1', '2', '3', '4', '5'] },
+  { family: '페인트', series: '57210', design: 'Paint Collection', variants: ['1', '2', '3', '6', '7', '8', '9', '10'] },
+  { family: '텍스처', series: '57227', design: 'Art Texture', variants: ['1', '2'] },
+  { family: '텍스처', series: '57226', design: 'Art Texture', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '텍스처', series: '57225', design: 'Art Texture', variants: ['1', '2', '3', '4'] },
+  { family: '텍스처', series: '57224', design: 'Art Texture', variants: ['1', '2', '3', '4', '5'] },
+  { family: '텍스처', series: '57223', design: 'Art Texture', variants: ['1', '2', '3', '4'] },
+  { family: '텍스처', series: '57219', design: 'Art Texture', variants: ['1', '2', '3', '4', '5', '6', '7'] },
+  { family: '텍스처', series: '57218', design: 'Art Texture', variants: ['1', '2', '3', '4', '5', '6', '7', '8'] },
+  { family: '텍스처', series: '57217', design: 'Art Texture', variants: ['1', '2', '3', '4', '5', '6', '8'] },
+  { family: '텍스처', series: '57215', design: 'Art Texture', variants: ['1', '2', '3', '4'] },
+  { family: '텍스처', series: '57206', design: 'Art Texture', variants: ['1', '2', '3', '4', '6', '7'] },
+  { family: '텍스처', series: '57205', design: 'Art Texture', variants: ['1', '2', '3', '5'] },
+  { family: '텍스처', series: '57198', design: 'Art Texture', variants: ['1', '3'] },
+  { family: '텍스처', series: '57196', design: 'Art Texture', variants: ['1', '2', '3', '6', '9'] },
+  { family: '텍스처', series: '57190', design: 'Art Texture', variants: ['1', '2', '3', '5'] },
+  { family: '텍스처', series: '57160', design: 'Art Texture', variants: ['1', '28', '39', '40'] },
+  { family: '기능성', series: '57222', design: 'Glow Wallpaper', variants: ['1'] },
+  { family: '기능성', series: '57221', design: 'Glow Wallpaper', variants: ['1'] },
+  { family: '텍스처', series: '57220', design: 'Art Texture', variants: ['1', '2', '3', '4', '5'] },
+  { family: '피너츠', series: '83204', design: 'Peanuts Wallpaper', variants: ['2'] },
+  { family: '피너츠', series: '83218', design: 'Peanuts Wallpaper', variants: ['3'] },
+  { family: '피너츠', series: '83210', design: 'Peanuts Wallpaper', variants: ['1'] },
+  { family: '피너츠', series: '83209', design: 'Peanuts Wallpaper', variants: ['2'] },
+  { family: '피너츠', series: '83206', design: 'Peanuts Wallpaper', variants: ['1'] },
+  { family: '천장용', series: '54170', design: 'Ceiling', variants: ['1', '2'] },
+  { family: '천장용', series: '54160', design: 'Ceiling', variants: ['1', '2'] },
+  { family: '천장용', series: '54013', design: 'Ceiling', variants: ['1', '2'] },
+] as const;
+
+const ARTBOOK_SAMPLES: Sample[] = ARTBOOK_SERIES.flatMap(({ family, series, design, variants }) =>
+  variants.map((variant) => {
+    const productNo = `${series}-${variant}`;
+    return {
+      id: `artbook-${productNo}`,
+      productNo,
+      name: `아트북 ${design} ${productNo}`,
+      brand: '개나리',
+      line: family,
+      materialType: '실크벽지',
+      collection: '아트북',
+      specs: ['친환경 실크벽지', family, 'PLA 식물성 코팅', '항곰팡이'],
+      image: '',
+      description: ARTBOOK_COLLECTION_DESCRIPTION,
+      detailSections: [...ARTBOOK_COMMON_DETAILS, ...(ARTBOOK_FAMILY_DETAILS[family] ?? [])],
+      sourceLabel: '개나리벽지 Artbook 카탈로그',
+    };
+  })
+);
+
 export function ensureCatalogCollections<T>(source: T): T {
   const next: any = structuredClone(source);
   const wallpaper = next.find((category: any) => category.id === 1 || category.name === '도배');
@@ -289,6 +364,7 @@ export function ensureCatalogCollections<T>(source: T): T {
   const collections = [
     { name: '프리모', lines: ['세이프가드', '플라스터', '페인트', '패브릭', '천장용'] },
     { name: '로하스+', lines: ['플라스터', '위브', '디자인', '페인트', '천장용'] },
+    { name: '아트북', lines: ['패브릭', '플라스터', '페인트', '텍스처', '기능성', '피너츠', '천장용'] },
   ];
   collections.reverse().forEach((collection) => {
     const existing = silk.groups?.find((group: any) => group.name === collection.name);
@@ -303,7 +379,7 @@ export function sampleMatchesCatalogSelection(
   sample: Sample,
   selection: { group?: string; line?: string },
 ): boolean {
-  if (selection.group && ['프리모', '로하스+'].includes(selection.group) && sample.collection !== selection.group) return false;
+  if (selection.group && ['프리모', '로하스+', '아트북'].includes(selection.group) && sample.collection !== selection.group) return false;
   if (selection.line && sample.line !== selection.line) return false;
   return true;
 }
@@ -313,6 +389,7 @@ export const MOCK_SAMPLES: Record<number, Sample[]> = {
   1: [
     ...PRIMO_SAMPLES,
     ...LOHAS_SAMPLES,
+    ...ARTBOOK_SAMPLES,
     // --- 프리모 컬렉션 ---
     { id: '1-1', productNo: '92102-1', name: '프리모 크랙 화이트', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-1.jpg' },
     { id: '1-2', productNo: '92102-2', name: '프리모 크랙 아이보리', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-2.jpg' },
