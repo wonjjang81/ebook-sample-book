@@ -171,19 +171,26 @@ export default function SampleDetail() {
                 className={cn(
                   'aspect-square rounded-xl overflow-hidden bg-muted relative group shadow-md transition-all',
                   isDragOver ? 'ring-4 ring-blue-400 ring-offset-2 scale-[1.01]' : '',
-                  isUploading ? 'cursor-wait' : 'cursor-zoom-in'
+                  isUploading ? 'cursor-wait' : displayThumb ? 'cursor-zoom-in' : 'cursor-pointer'
                 )}
-                onClick={() => !isUploading && setIsImageExpanded(true)}
+                onClick={() => !isUploading && displayThumb && setIsImageExpanded(true)}
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleDrop}
               >
                 {/* 이미지 */}
-                <img
-                  src={displayThumb}
-                  alt={sample.name}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+                {displayThumb ? (
+                  <img
+                    src={displayThumb}
+                    alt={sample.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-slate-100 text-slate-500">
+                    <ImagePlus className="h-12 w-12" />
+                    <div className="text-center"><p className="font-semibold">이미지 미등록</p><p className="mt-1 text-xs">아래 버튼에서 직접 업로드하세요.</p></div>
+                  </div>
+                )}
 
                 {/* 업로드 중 오버레이 */}
                 {isUploading && (
@@ -202,7 +209,7 @@ export default function SampleDetail() {
                 )}
 
                 {/* 호버 시 줌 아이콘 */}
-                {!isUploading && !isDragOver && (
+                {displayThumb && !isUploading && !isDragOver && (
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
                     <ZoomIn className="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
                   </div>
@@ -241,12 +248,19 @@ export default function SampleDetail() {
                 </Button>
 
                 {/* 다운로드 버튼 */}
-                <a href={displayOrig} download={`${sample.productNo}.jpg`} className="w-full">
-                  <Button variant="outline" size="sm" className="gap-1.5 w-full">
+                {displayOrig ? (
+                  <a href={displayOrig} download={`${sample.productNo}.jpg`} className="w-full">
+                    <Button variant="outline" size="sm" className="gap-1.5 w-full">
+                      <Download className="w-3.5 h-3.5" />
+                      다운로드
+                    </Button>
+                  </a>
+                ) : (
+                  <Button variant="outline" size="sm" className="gap-1.5 w-full" disabled>
                     <Download className="w-3.5 h-3.5" />
-                    다운로드
+                    이미지 없음
                   </Button>
-                </a>
+                )}
               </div>
 
               {/* 기본 이미지로 복원 버튼 (업로드된 이미지가 있을 때만) */}
@@ -327,11 +341,15 @@ export default function SampleDetail() {
                           )}
                           title={s.name}
                         >
-                          <img
-                            src={storedThumb ?? s.image}
-                            alt={s.name}
-                            className="w-full h-full object-cover"
-                          />
+                          {(storedThumb ?? s.image) ? (
+                            <img
+                              src={storedThumb ?? s.image}
+                              alt={s.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-400"><ImagePlus className="h-4 w-4" /></div>
+                          )}
                         </div>
                       );
                     })}
@@ -347,6 +365,7 @@ export default function SampleDetail() {
               <div className="flex flex-wrap gap-2 mb-3">
                 <Badge>{categoryName}</Badge>
                 <Badge variant="secondary">{sample.brand}</Badge>
+                {sample.collection && <Badge variant="outline">{sample.collection}</Badge>}
                 <Badge variant="outline">{sample.line}</Badge>
                 {sample.specs.map((spec) => (
                   <Badge key={spec} variant="outline" className="text-xs bg-gray-50">
@@ -377,7 +396,7 @@ export default function SampleDetail() {
                       </div>
                       <div className="border-b border-border pb-3">
                         <p className="text-sm text-muted-foreground font-medium mb-1">컬렉션</p>
-                        <p className="font-semibold">{sample.line}</p>
+                        <p className="font-semibold">{sample.collection ?? sample.line}</p>
                       </div>
                       <div className="border-b border-border pb-3">
                         <p className="text-sm text-muted-foreground font-medium mb-1">품번</p>
@@ -387,6 +406,18 @@ export default function SampleDetail() {
                         <p className="text-sm text-muted-foreground font-medium mb-1">공정</p>
                         <p className="font-semibold">{categoryName}</p>
                       </div>
+                      {sample.materialType && (
+                        <div className="border-b border-border pb-3">
+                          <p className="text-sm text-muted-foreground font-medium mb-1">자재 유형</p>
+                          <p className="font-semibold">{sample.materialType}</p>
+                        </div>
+                      )}
+                      {sample.collection && (
+                        <div className="border-b border-border pb-3">
+                          <p className="text-sm text-muted-foreground font-medium mb-1">제품 계열</p>
+                          <p className="font-semibold">{sample.line}</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -413,7 +444,18 @@ export default function SampleDetail() {
               <TabsContent value="description" className="space-y-4">
                 <Card>
                   <CardContent className="pt-6">
-                    {sample.line === '프리모' ? (
+                    {sample.description ? (
+                      <div className="space-y-4 text-foreground leading-relaxed">
+                        <p>{sample.description}</p>
+                        {sample.detailSections?.map((section) => (
+                          <div key={section.title}>
+                            <p className="font-semibold text-lg">{section.title}</p>
+                            <p className="mt-1">{section.description}</p>
+                          </div>
+                        ))}
+                        {sample.sourceLabel && <p className="border-t pt-4 text-xs text-muted-foreground">자료 기준: {sample.sourceLabel}</p>}
+                      </div>
+                    ) : sample.line === '프리모' ? (
                       <div className="space-y-4 text-foreground leading-relaxed">
                         <p className="font-semibold text-lg">차원이 다른 시공성</p>
                         <p>부직포 사용으로 업그레이드 된 시공성을 제공합니다. 프리모는 숨죽임 1시간 경과 후에도 벽지 폭의 변화가 적어 시공 후에도 이음 부위의 벌어짐과 이음 부위 표시가 잘 보이지 않습니다.</p>
@@ -438,7 +480,7 @@ export default function SampleDetail() {
       </div>
 
       {/* Image Zoom Modal — 원본 해상도 유지 */}
-      {isImageExpanded && (
+      {isImageExpanded && displayOrig && (
         <div
           className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           onClick={() => setIsImageExpanded(false)}

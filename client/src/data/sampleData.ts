@@ -70,6 +70,11 @@ export interface Sample {
   specs: string[];
   image: string;
   categoryId?: number;
+  materialType?: string;
+  collection?: string;
+  description?: string;
+  detailSections?: Array<{ title: string; description: string }>;
+  sourceLabel?: string;
 }
 
 export interface EditableSample extends Sample {
@@ -110,9 +115,88 @@ export function saveManagedCategories(categories: ManagedCategory[]) {
   localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(categories.map((category, order) => ({ ...category, order }))));
 }
 
+const PRIMO_COLLECTION_DESCRIPTION = '프리모는 공간과 삶의 질을 업그레이드하는 개나리벽지의 하이엔드 실크벽지 컬렉션입니다. 부드러운 디자인과 섬세한 엠보싱, 우수한 시공성 및 생활 내구성을 중심으로 설계되었습니다.';
+
+const PRIMO_COMMON_DETAILS = [
+  { title: '부드러운 리얼 텍스처', description: '부드러운 디자인과 섬세한 엠보싱이 어우러져 만질수록 깊이 있는 고급스러움을 연출합니다.' },
+  { title: '무늬 맞춤 없는 편리한 시공성', description: '시간이 지나도 이음새가 벌어지거나 티 나지 않도록 설계되어 한 폭의 벽처럼 깨끗하고 미니멀한 공간을 완성합니다.' },
+  { title: '더 향상된 두께감', description: '벽면 상태에 관계없이 시공 완성도가 높고, 긁힘과 찍힘에 강한 초내구성으로 깔끔함을 오래 유지합니다.' },
+  { title: '생활 스크래치에 강한 고내구성', description: '생활 중 발생하는 찍힘과 긁힘 부담을 줄여 프리미엄 공간의 완성도를 오래 유지하도록 돕습니다.' },
+];
+
+const PRIMO_FAMILY_DETAILS: Record<string, Array<{ title: string; description: string }>> = {
+  세이프가드: [
+    { title: '반려동물제품 PS 인증', description: '반려동물 제품의 안전성과 품질 기준을 충족한 고기능성 제품군입니다.' },
+    { title: '내스크래치성 30N', description: '기존 기준 12N 대비 강화된 내스크래치성을 확보해 반려동물과 함께하는 공간에 적합합니다.' },
+    { title: '필름 같은 견고한 표면', description: '강한 표면 처리로 모서리나 걸레받이 주변이 쉽게 찢기거나 긁히지 않고 이음매도 깔끔하게 마감됩니다.' },
+  ],
+  플라스터: [
+    { title: '깊고 사실적인 엠보 텍스처', description: '회벽과 스톤의 자연스러운 깊이와 변화를 표현해 손으로 완성한 듯한 입체적 공간을 연출합니다.' },
+  ],
+  페인트: [
+    { title: '정제된 페인트 질감', description: '매트하고 차분한 페인트 표면감을 벽지의 편리한 시공성과 함께 제공합니다.' },
+  ],
+  패브릭: [
+    { title: '편안한 패브릭 표면감', description: '섬세한 직물 조직과 부드러운 촉감으로 차분하고 안락한 실내 분위기를 완성합니다.' },
+  ],
+  천장용: [
+    { title: '벽과 천장의 통일감', description: '프리모 벽면 제품과 조화되는 밝고 단정한 천장 마감으로 공간 전체의 완성도를 높입니다.' },
+  ],
+};
+
+const PRIMO_SERIES = [
+  { family: '세이프가드', series: '99705', variants: ['1', '2', '3', '4'] },
+  { family: '세이프가드', series: '99704', variants: ['1', '2', '3'] },
+  { family: '세이프가드', series: '99703', variants: ['1', '2', '3'] },
+  { family: '세이프가드', series: '99702', variants: ['1', '2'] },
+  { family: '세이프가드', series: '99701', variants: ['1', '2', '3'] },
+  { family: '플라스터', series: '99128', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '플라스터', series: '99127', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터', series: '99126', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '플라스터', series: '99125', variants: ['1', '2', '3', '4'] },
+  { family: '플라스터', series: '99124', variants: ['1', '2'] },
+  { family: '플라스터', series: '99123', variants: ['1', '2'] },
+  { family: '플라스터', series: '99121', variants: ['1', '2', '3'] },
+  { family: '플라스터', series: '99117', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터', series: '99116', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터', series: '99115', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터', series: '99113', variants: ['1', '2', '3', '4'] },
+  { family: '플라스터', series: '99112', variants: ['1', '2', '3'] },
+  { family: '페인트', series: '99110', variants: ['1', '2', '5'] },
+  { family: '페인트', series: '99109', variants: ['1'] },
+  { family: '패브릭', series: '99120', variants: ['1', '2', '3', '4'] },
+  { family: '패브릭', series: '99119', variants: ['1', '2', '3', '4'] },
+  { family: '패브릭', series: '99118', variants: ['1', '2'] },
+  { family: '패브릭', series: '99106', variants: ['1', '4', '6'] },
+  { family: '패브릭', series: '99105', variants: ['1', '2', '5', '6'] },
+  { family: '패브릭', series: '99104', variants: ['1', '2'] },
+  { family: '천장용', series: '99001', variants: ['1'] },
+] as const;
+
+const PRIMO_SAMPLES: Sample[] = PRIMO_SERIES.flatMap(({ family, series, variants }) =>
+  variants.map((variant) => {
+    const productNo = `${series}-${variant}`;
+    return {
+      id: `primo-${productNo}`,
+      productNo,
+      name: `프리모 ${family} ${productNo}`,
+      brand: '개나리',
+      line: family,
+      materialType: '실크벽지',
+      collection: '프리모',
+      specs: ['하이엔드 실크벽지', family, '고내구성', '무늬 맞춤 없음'],
+      image: '',
+      description: PRIMO_COLLECTION_DESCRIPTION,
+      detailSections: [...PRIMO_COMMON_DETAILS, ...(PRIMO_FAMILY_DETAILS[family] ?? [])],
+      sourceLabel: '개나리벽지 PRIMO 2026 카탈로그',
+    };
+  })
+);
+
 // 카테고리별 샘플 데이터
 export const MOCK_SAMPLES: Record<number, Sample[]> = {
   1: [
+    ...PRIMO_SAMPLES,
     // --- 프리모 컬렉션 ---
     { id: '1-1', productNo: '92102-1', name: '프리모 크랙 화이트', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-1.jpg' },
     { id: '1-2', productNo: '92102-2', name: '프리모 크랙 아이보리', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-2.jpg' },
