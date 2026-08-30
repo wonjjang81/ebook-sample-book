@@ -18,7 +18,7 @@ import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { getCatalogSamples, getManagedCategories, saveCatalogSample, deleteCatalogSample, type EditableSample } from '@/data/sampleData';
+import { ensureCatalogCollections, getCatalogSamples, getManagedCategories, saveCatalogSample, deleteCatalogSample, type EditableSample } from '@/data/sampleData';
 
 // Mock 데이터 - 5단계 계층 구조 (카테고리 > 브랜드 > 소재유형 > 제품군 > 라인)
 const CATEGORIES = [
@@ -135,40 +135,16 @@ type TreeLevel = 'category' | 'brand' | 'materialType' | 'group' | 'line';
 type TreeContext = { categoryId?: number; brand?: string; materialType?: string; group?: string; line?: string };
 const TREE_STORAGE_KEY = 'ebook-category-tree-v1';
 
-const ensurePrimoCatalogPath = (source: CatalogTree): CatalogTree => {
-  const next: any = structuredClone(source);
-  const wallpaper = next.find((category: any) => category.id === 1 || category.name === '도배');
-  const gaenari = wallpaper?.brands.find((brand: any) => brand.name === '개나리');
-  if (!gaenari) return next;
-
-  let silk = gaenari.materialTypes?.find((materialType: any) => materialType.name === '실크벽지');
-  if (!silk) {
-    silk = gaenari.materialTypes?.find((materialType: any) => materialType.name === '실크');
-    if (silk) silk.name = '실크벽지';
-  }
-  if (!silk) {
-    silk = { name: '실크벽지', groups: [] };
-    gaenari.materialTypes = [...(gaenari.materialTypes ?? []), silk];
-  }
-
-  const primoLines = ['세이프가드', '플라스터', '페인트', '패브릭', '천장용'];
-  const primo = silk.groups?.find((group: any) => group.name === '프리모');
-  if (primo) primo.lines = Array.from(new Set([...(primo.lines ?? []), ...primoLines]));
-  else silk.groups = [{ name: '프리모', lines: primoLines }, ...(silk.groups ?? [])];
-
-  return next;
-};
-
 const loadCatalogTree = (): CatalogTree => {
   try {
     const saved = JSON.parse(localStorage.getItem(TREE_STORAGE_KEY) || 'null');
     if (Array.isArray(saved) && saved.length) {
-      const migrated = ensurePrimoCatalogPath(saved);
+      const migrated = ensureCatalogCollections(saved) as CatalogTree;
       localStorage.setItem(TREE_STORAGE_KEY, JSON.stringify(migrated));
       return migrated;
     }
   } catch { /* 기본 구조 사용 */ }
-  return ensurePrimoCatalogPath(getDisplayCategories());
+  return ensureCatalogCollections(getDisplayCategories()) as CatalogTree;
 };
 
 // Mock 데이터 - 샘플

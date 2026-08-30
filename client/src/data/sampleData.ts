@@ -193,10 +193,117 @@ const PRIMO_SAMPLES: Sample[] = PRIMO_SERIES.flatMap(({ family, series, variants
   })
 );
 
+const LOHAS_COLLECTION_DESCRIPTION = '로하스+는 자연과 함께 숨 쉬는 공간과 건강한 삶을 지향하는 개나리벽지의 프리미엄 실크벽지 컬렉션입니다. 자연에서 영감을 받은 깊이 있는 표면과 친환경·안전 기준을 함께 담았습니다.';
+
+const LOHAS_COMMON_DETAILS = [
+  { title: '9년 연속 UL 그린가드 골드 등급', description: '실내 공기질과 저방출 기준을 고려한 제품으로 건강한 생활 공간을 만드는 데 적합합니다.' },
+  { title: '환경과 안전을 고려한 소재', description: '저탄소 녹색제품, 환경표지 인증, 대한아토피협회 추천과 식물성 원료 PLA 코팅을 적용하고 8대 중금속 안전 기준을 확인했습니다.' },
+  { title: '곰팡이 번식 억제', description: '항곰팡이 수지층을 적용해 일상 공간을 더욱 위생적으로 유지하도록 돕습니다.' },
+  { title: '고압·고온 엠보싱', description: '고온 건조 공정으로 무늬의 깊이감이 오래 유지되며 정교한 엠보 기술로 자연스러운 리얼 텍스처를 구현합니다.' },
+  { title: '정밀한 품질 관리', description: '자동 코팅 중량 제어 시스템과 글로벌 엠보 롤 전문기업 협업으로 색상 편차를 줄이고 독점 패턴을 완성합니다.' },
+];
+
+const LOHAS_FAMILY_DETAILS: Record<string, Array<{ title: string; description: string }>> = {
+  플라스터: [{ title: '자연을 닮은 플라스터 질감', description: '회벽, 미네랄, 모래, 점토에서 영감을 받은 깊고 차분한 표면으로 편안한 공간을 연출합니다.' }],
+  위브: [{ title: '섬세한 직물 조직', description: '코튼, 리넨, 부클레 등 패브릭 조직을 정교하게 표현해 따뜻하고 자연스러운 공간을 완성합니다.' }],
+  디자인: [{ title: '공간의 포인트가 되는 패턴', description: '마블, 보태니컬, 아틀리에 감성의 패턴을 절제된 색상으로 표현해 다양한 인테리어에 조화됩니다.' }],
+  페인트: [{ title: '도시적이고 차분한 페인트 표면', description: '어반·클레이 페인트의 매트한 감성을 실크벽지의 관리 편의성과 함께 제공합니다.' }],
+  천장용: [{ title: '벽과 천장의 자연스러운 연결', description: '밝고 단정한 천장 전용 제품으로 로하스+ 벽면 컬렉션과 조화로운 마감을 제공합니다.' }],
+};
+
+const LOHAS_SERIES = [
+  { family: '플라스터', series: '87493', design: 'Serenity Wall', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터', series: '87492', design: 'Natural Plaster', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '플라스터', series: '87491', design: 'Luna Plaster', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터', series: '87490', design: 'Touch Coat', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터', series: '87456', design: 'Matte Plaster', variants: ['1', '2', '3', '4', '5', '7', '8'] },
+  { family: '플라스터', series: '87489', design: 'Maison Plaster', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터', series: '87488', design: 'Mineral Plaster', variants: ['1', '2', '3', '4'] },
+  { family: '플라스터', series: '87487', design: 'Straw Plaster', variants: ['1', '2', '3', '4'] },
+  { family: '플라스터', series: '87486', design: 'Sand Plaster', variants: ['1', '2', '3', '4', '5'] },
+  { family: '위브', series: '87483', design: 'Cotton Weave', variants: ['1', '2', '3', '4'] },
+  { family: '위브', series: '87481', design: 'Natural Weave', variants: ['1', '2', '3', '4'] },
+  { family: '위브', series: '87480', design: 'Dove Weave', variants: ['1', '2', '3', '4', '5'] },
+  { family: '위브', series: '87479', design: 'Grain Weave', variants: ['1', '2', '3', '4'] },
+  { family: '위브', series: '87478', design: 'Layer Weave', variants: ['1', '2', '3'] },
+  { family: '디자인', series: '87485', design: 'Classic Marble', variants: ['1', '2'] },
+  { family: '디자인', series: '87484', design: 'Atelier', variants: ['1', '2'] },
+  { family: '디자인', series: '87482', design: 'Botanical Stitch', variants: ['1', '2', '3'] },
+  { family: '플라스터', series: '87477', design: 'Flow Plaster', variants: ['1', '2'] },
+  { family: '플라스터', series: '87476', design: 'Clay Plaster', variants: ['1', '2', '3', '4', '5'] },
+  { family: '플라스터', series: '87475', design: 'French Plaster', variants: ['1', '2', '3', '4'] },
+  { family: '플라스터', series: '87474', design: 'Volcanic Plaster', variants: ['1', '2', '3'] },
+  { family: '디자인', series: '87472', design: 'Natural Accent', variants: ['1'] },
+  { family: '디자인', series: '87471', design: 'Natural Accent', variants: ['1', '2', '3', '4'] },
+  { family: '플라스터', series: '87470', design: 'Fine Plaster', variants: ['1', '2', '3', '4'] },
+  { family: '위브', series: '87469', design: 'New Cotton', variants: ['1', '2', '3', '4'] },
+  { family: '위브', series: '87468', design: 'Neo Linen', variants: ['1', '2', '3'] },
+  { family: '위브', series: '87467', design: 'Bouclé', variants: ['1', '2', '3', '4'] },
+  { family: '위브', series: '87464', design: 'Plain Weave', variants: ['1', '2'] },
+  { family: '위브', series: '87461', design: 'Nouve', variants: ['1', '2', '5'] },
+  { family: '위브', series: '87460', design: 'Bermuda', variants: ['1', '2', '3', '5'] },
+  { family: '플라스터', series: '87457', design: 'Deep Plaster', variants: ['1', '2'] },
+  { family: '페인트', series: '87451', design: 'Urban and Clay Paint', variants: ['1', '7'] },
+  { family: '페인트', series: '87450', design: 'Urban and Clay Paint', variants: ['1'] },
+  { family: '천장용', series: '54170', design: 'Ceiling', variants: ['1', '2'] },
+  { family: '천장용', series: '54160', design: 'Ceiling', variants: ['1', '2'] },
+  { family: '천장용', series: '54013', design: 'Ceiling', variants: ['1', '2'] },
+] as const;
+
+const LOHAS_SAMPLES: Sample[] = LOHAS_SERIES.flatMap(({ family, series, design, variants }) =>
+  variants.map((variant) => {
+    const productNo = `${series}-${variant}`;
+    return {
+      id: `lohas-${productNo}`,
+      productNo,
+      name: `로하스+ ${design} ${productNo}`,
+      brand: '개나리',
+      line: family,
+      materialType: '실크벽지',
+      collection: '로하스+',
+      specs: ['프리미엄 실크벽지', family, '친환경', 'PLA 코팅'],
+      image: '',
+      description: LOHAS_COLLECTION_DESCRIPTION,
+      detailSections: [...LOHAS_COMMON_DETAILS, ...(LOHAS_FAMILY_DETAILS[family] ?? [])],
+      sourceLabel: '개나리벽지 LOHAS+ 2026 카탈로그',
+    };
+  })
+);
+
+export function ensureCatalogCollections<T>(source: T): T {
+  const next: any = structuredClone(source);
+  const wallpaper = next.find((category: any) => category.id === 1 || category.name === '도배');
+  const gaenari = wallpaper?.brands.find((brand: any) => brand.name === '개나리');
+  if (!gaenari) return next;
+
+  let silk = gaenari.materialTypes?.find((materialType: any) => materialType.name === '실크벽지');
+  if (!silk) {
+    silk = gaenari.materialTypes?.find((materialType: any) => materialType.name === '실크');
+    if (silk) silk.name = '실크벽지';
+  }
+  if (!silk) {
+    silk = { name: '실크벽지', groups: [] };
+    gaenari.materialTypes = [...(gaenari.materialTypes ?? []), silk];
+  }
+
+  const collections = [
+    { name: '프리모', lines: ['세이프가드', '플라스터', '페인트', '패브릭', '천장용'] },
+    { name: '로하스+', lines: ['플라스터', '위브', '디자인', '페인트', '천장용'] },
+  ];
+  collections.reverse().forEach((collection) => {
+    const existing = silk.groups?.find((group: any) => group.name === collection.name);
+    if (existing) existing.lines = Array.from(new Set([...(existing.lines ?? []), ...collection.lines]));
+    else silk.groups = [collection, ...(silk.groups ?? [])];
+  });
+
+  return next;
+}
+
 // 카테고리별 샘플 데이터
 export const MOCK_SAMPLES: Record<number, Sample[]> = {
   1: [
     ...PRIMO_SAMPLES,
+    ...LOHAS_SAMPLES,
     // --- 프리모 컬렉션 ---
     { id: '1-1', productNo: '92102-1', name: '프리모 크랙 화이트', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-1.jpg' },
     { id: '1-2', productNo: '92102-2', name: '프리모 크랙 아이보리', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-2.jpg' },
