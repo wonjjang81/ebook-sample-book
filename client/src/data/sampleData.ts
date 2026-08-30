@@ -225,6 +225,12 @@ export const ALL_SAMPLES: Sample[] = Object.entries(MOCK_SAMPLES).flatMap(([catI
 const CATALOG_KEY = 'ebook.catalog.samples.v1';
 const HIDDEN_KEY = 'ebook.catalog.hidden.v1';
 
+function publicAssetUrl(value: string): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return value;
+  if (value.startsWith(import.meta.env.BASE_URL)) return value;
+  return `${import.meta.env.BASE_URL}${value.slice(1)}`;
+}
+
 function readJson<T>(key: string, fallback: T): T {
   try {
     const value = localStorage.getItem(key);
@@ -245,7 +251,9 @@ export function getCatalogSamples(includeDrafts = false): EditableSample[] {
     ...savedById.get(sample.id),
   }));
   const custom = saved.filter((sample) => !ALL_SAMPLES.some((baseSample) => baseSample.id === sample.id));
-  return [...base, ...custom].filter((sample) => !hidden.has(sample.id) && (includeDrafts || sample.status === 'published'));
+  return [...base, ...custom]
+    .filter((sample) => !hidden.has(sample.id) && (includeDrafts || sample.status === 'published'))
+    .map((sample) => ({ ...sample, image: publicAssetUrl(sample.image) }));
 }
 
 export function saveCatalogSample(sample: EditableSample): void {
