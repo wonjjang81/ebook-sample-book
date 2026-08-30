@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { findSampleById, getCategoryName, ALL_SAMPLES } from '@/data/sampleData';
+import { findSampleById, getCatalogLinemates, getCategoryName, ALL_SAMPLES } from '@/data/sampleData';
 import {
   getStoredThumb, getStoredOrig,
   uploadProductImage, deleteProductImage
@@ -43,7 +43,7 @@ export default function SampleDetail() {
 
   // 같은 라인의 인접 제품 (이전/다음 탐색)
   const linemates = sample
-    ? ALL_SAMPLES.filter((s) => s.line === sample.line && s.categoryId === sample.categoryId)
+    ? getCatalogLinemates(sample, ALL_SAMPLES)
     : [];
   const currentIdx = linemates.findIndex((s) => s.id === sampleId);
   const prevSample = currentIdx > 0 ? linemates[currentIdx - 1] : null;

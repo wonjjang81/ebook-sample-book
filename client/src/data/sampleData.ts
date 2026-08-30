@@ -422,6 +422,17 @@ export const ALL_SAMPLES: Sample[] = Object.entries(MOCK_SAMPLES).flatMap(([catI
   samples.map((s) => ({ ...s, categoryId: Number(catId) }))
 );
 
+export function getCatalogLinemates(
+  sample: Sample & { categoryId: number },
+  samples: Sample[] = ALL_SAMPLES,
+): Sample[] {
+  return samples.filter((candidate) =>
+    candidate.categoryId === sample.categoryId
+    && candidate.line === sample.line
+    && candidate.collection === sample.collection
+  );
+}
+
 const CATALOG_KEY = 'ebook.catalog.samples.v1';
 const HIDDEN_KEY = 'ebook.catalog.hidden.v1';
 
