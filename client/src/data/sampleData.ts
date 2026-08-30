@@ -428,6 +428,58 @@ const WIDE_PAPER_SAMPLES: Sample[] = WIDE_PAPER_SERIES.flatMap(({ family, series
   })
 );
 
+const WALLGUARD_COLLECTION_DESCRIPTION = '월가드는 생활 스크래치와 오염에 강한 표면, 차분한 저광택 질감과 안전성을 함께 고려한 신한벽지의 고내구성 실크벽지 컬렉션입니다. 반려동물과 함께하는 공간부터 주거·상업 공간까지 폭넓게 활용할 수 있습니다.';
+
+const WALLGUARD_COMMON_DETAILS = [
+  { title: '20배 강화된 내구성', description: '일상에서 발생하는 긁힘과 찍힘에 강하도록 표면 내구성을 강화해 깔끔한 벽면을 오래 유지하도록 돕습니다.' },
+  { title: '스크래치 걱정을 줄인 표면', description: '반려동물의 발톱과 생활 마찰에 대응하는 견고한 표면으로 관리 부담을 줄였습니다.' },
+  { title: '반려동물 생활에 적합한 PS 인증', description: '반려동물 제품 안전성과 품질 기준을 확인한 PS 인증 제품으로 반려동물과 함께하는 공간에 적합합니다.' },
+  { title: '차분한 저광택 고급 질감', description: '빛 반사를 줄인 매트한 표면과 섬세한 엠보로 정돈되고 편안한 공간 분위기를 연출합니다.' },
+  { title: '시험과 인증으로 확인한 품질', description: '카탈로그에 제시된 국내외 시험과 인증 자료를 바탕으로 유해 물질 관리, 내구성과 생활 안전성을 고려했습니다.' },
+];
+
+const WALLGUARD_FAMILY_DETAILS: Record<string, Array<{ title: string; description: string }>> = {
+  샌디먼트: [{ title: '부드러운 미네랄 표면', description: '고운 샌드와 시멘트가 섞인 듯한 잔잔한 질감으로 차분하고 현대적인 공간을 완성합니다.' }],
+  앤티크월: [{ title: '시간의 결을 담은 벽면', description: '은은한 빈티지 표면과 자연스러운 색 변화로 깊이 있는 공간 분위기를 만듭니다.' }],
+  소프톤: [{ title: '편안하고 부드러운 톤', description: '밝고 차분한 컬러와 잔잔한 텍스처로 침실과 거실에 편안한 배경을 제공합니다.' }],
+  믹스톤: [{ title: '두 가지 질감의 조화', description: '단단하고 정제된 표면과 유럽풍 플라스터 감성을 한 컬렉션에서 선택할 수 있습니다.' }],
+  콘크무드: [{ title: '절제된 콘크리트 감성', description: '도시적인 콘크리트 질감을 부드럽게 다듬어 미니멀한 공간에 자연스럽게 어울립니다.' }],
+  매트슬랩: [{ title: '차분한 슬랩 텍스처', description: '매트한 석재 표면을 섬세하게 표현해 모던하고 안정감 있는 벽면을 연출합니다.' }],
+  러프트: [{ title: '자연스러운 러프 텍스처', description: '거친 듯 부드러운 표면 변화로 공간에 깊이와 따뜻한 입체감을 더합니다.' }],
+  하드릭: [{ title: '견고한 브릭 무드', description: '단단한 벽돌과 미네랄 표면에서 영감을 받은 질감으로 차분한 포인트를 만듭니다.' }],
+};
+
+const WALLGUARD_SERIES = [
+  { family: '샌디먼트', series: 'W2208', design: 'Sandment', variants: ['1', '2', '3', '4', '5', '6', '7'] },
+  { family: '앤티크월', series: 'W2206', design: 'Antique Wall', variants: ['1', '2'] },
+  { family: '소프톤', series: 'W2205', design: 'Softone', variants: ['1', '2', '3', '4', '5'] },
+  { family: '믹스톤', series: 'W2202', design: 'Mixtone', variants: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'] },
+  { family: '콘크무드', series: 'W2204', design: 'Concmood', variants: ['1', '2', '3', '4'] },
+  { family: '매트슬랩', series: 'W2207', design: 'Matte Slab', variants: ['1', '2', '3', '4'] },
+  { family: '러프트', series: 'W2203', design: 'Rought', variants: ['1', '2', '3', '4'] },
+  { family: '하드릭', series: 'W2201', design: 'Hard Rick', variants: ['1', '2', '3', '4', '5'] },
+] as const;
+
+const WALLGUARD_SAMPLES: Sample[] = WALLGUARD_SERIES.flatMap(({ family, series, design, variants }) =>
+  variants.map((variant) => {
+    const productNo = `${series}-${variant}`;
+    return {
+      id: `wallguard-${productNo.toLowerCase()}`,
+      productNo,
+      name: `월가드 ${design} ${productNo}`,
+      brand: '신한',
+      line: family,
+      materialType: '실크',
+      collection: '월가드',
+      specs: ['고내구성 실크벽지', family, '스크래치 저항', '저광택', 'PS 인증'],
+      image: '',
+      description: WALLGUARD_COLLECTION_DESCRIPTION,
+      detailSections: [...WALLGUARD_COMMON_DETAILS, ...(WALLGUARD_FAMILY_DETAILS[family] ?? [])],
+      sourceLabel: '신한벽지 WALLGUARD 공개 카탈로그',
+    };
+  })
+);
+
 export function ensureCatalogCollections<T>(source: T): T {
   const next: any = structuredClone(source);
   const wallpaper = next.find((category: any) => category.id === 1 || category.name === '도배');
@@ -465,6 +517,19 @@ export function ensureCatalogCollections<T>(source: T): T {
   if (existingWidePaper) existingWidePaper.lines = Array.from(new Set([...(existingWidePaper.lines ?? []), ...widePaper.lines]));
   else paper.groups = [widePaper, ...(paper.groups ?? [])];
 
+  const shinhan = wallpaper?.brands.find((brand: any) => brand.name === '신한');
+  if (shinhan) {
+    let shinhanSilk = shinhan.materialTypes?.find((materialType: any) => materialType.name === '실크');
+    if (!shinhanSilk) {
+      shinhanSilk = { name: '실크', groups: [] };
+      shinhan.materialTypes = [...(shinhan.materialTypes ?? []), shinhanSilk];
+    }
+    const wallguard = { name: '월가드', lines: ['샌디먼트', '앤티크월', '소프톤', '믹스톤', '콘크무드', '매트슬랩', '러프트', '하드릭'] };
+    const existingWallguard = shinhanSilk.groups?.find((group: any) => group.name === wallguard.name);
+    if (existingWallguard) existingWallguard.lines = Array.from(new Set([...(existingWallguard.lines ?? []), ...wallguard.lines]));
+    else shinhanSilk.groups = [wallguard, ...(shinhanSilk.groups ?? [])];
+  }
+
   return next;
 }
 
@@ -472,7 +537,7 @@ export function sampleMatchesCatalogSelection(
   sample: Sample,
   selection: { group?: string; line?: string },
 ): boolean {
-  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지'].includes(selection.group) && sample.collection !== selection.group) return false;
+  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드'].includes(selection.group) && sample.collection !== selection.group) return false;
   if (selection.line && sample.line !== selection.line) return false;
   return true;
 }
@@ -484,6 +549,7 @@ export const MOCK_SAMPLES: Record<number, Sample[]> = {
     ...LOHAS_SAMPLES,
     ...ARTBOOK_SAMPLES,
     ...WIDE_PAPER_SAMPLES,
+    ...WALLGUARD_SAMPLES,
     // --- 프리모 컬렉션 ---
     { id: '1-1', productNo: '92102-1', name: '프리모 크랙 화이트', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-1.jpg' },
     { id: '1-2', productNo: '92102-2', name: '프리모 크랙 아이보리', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-2.jpg' },
