@@ -299,6 +299,15 @@ export function ensureCatalogCollections<T>(source: T): T {
   return next;
 }
 
+export function sampleMatchesCatalogSelection(
+  sample: Sample,
+  selection: { group?: string; line?: string },
+): boolean {
+  if (selection.group && ['프리모', '로하스+'].includes(selection.group) && sample.collection !== selection.group) return false;
+  if (selection.line && sample.line !== selection.line) return false;
+  return true;
+}
+
 // 카테고리별 샘플 데이터
 export const MOCK_SAMPLES: Record<number, Sample[]> = {
   1: [

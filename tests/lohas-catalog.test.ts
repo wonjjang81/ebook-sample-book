@@ -31,4 +31,15 @@ describe('LOHAS+ catalog', () => {
     expect(silk?.groups.some((group: { name: string }) => group.name === '기존')).toBe(true);
     expect(lohas?.lines).toEqual(['플라스터', '위브', '디자인', '페인트', '천장용']);
   });
+
+  it('does not mix products from collections that share the same family name', () => {
+    const sampleMatchesCatalogSelection = (sampleData as typeof sampleData & {
+      sampleMatchesCatalogSelection?: (sample: sampleData.Sample, selection: { group?: string; line?: string }) => boolean;
+    }).sampleMatchesCatalogSelection;
+    const lohasPlaster = sampleData.ALL_SAMPLES.find((sample) => sample.collection === '로하스+' && sample.line === '플라스터');
+    const primoPlaster = sampleData.ALL_SAMPLES.find((sample) => sample.collection === '프리모' && sample.line === '플라스터');
+
+    expect(sampleMatchesCatalogSelection?.(lohasPlaster!, { group: '로하스+', line: '플라스터' })).toBe(true);
+    expect(sampleMatchesCatalogSelection?.(primoPlaster!, { group: '로하스+', line: '플라스터' })).toBe(false);
+  });
 });

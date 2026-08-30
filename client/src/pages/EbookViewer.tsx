@@ -18,7 +18,7 @@ import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { ensureCatalogCollections, getCatalogSamples, getManagedCategories, saveCatalogSample, deleteCatalogSample, type EditableSample } from '@/data/sampleData';
+import { ensureCatalogCollections, getCatalogSamples, getManagedCategories, sampleMatchesCatalogSelection, saveCatalogSample, deleteCatalogSample, type EditableSample } from '@/data/sampleData';
 
 // Mock 데이터 - 5단계 계층 구조 (카테고리 > 브랜드 > 소재유형 > 제품군 > 라인)
 const CATEGORIES = [
@@ -532,9 +532,9 @@ export default function EbookViewer() {
       if (selectedBrand && s.brand !== selectedBrand) return false;
       // materialType 필터 (실크/합지 등) — sample에 materialType 필드가 있는 경우
       if (selectedMaterialType && (s as any).materialType && (s as any).materialType !== selectedMaterialType) return false;
+      if (!sampleMatchesCatalogSelection(s, { group: selectedGroup ?? undefined, line: selectedLine ?? undefined })) return false;
       // 그룹이 선택된 경우: 해당 그룹의 라인 목록으로 필터
       if (selectedGroup && currentGroupLines.length > 0 && !currentGroupLines.includes(s.line)) return false;
-      if (selectedLine && s.line !== selectedLine) return false;
       const query = searchQuery.trim().toLocaleLowerCase('ko-KR');
       if (query && ![s.productNo, s.name, s.brand, s.line, ...s.specs].some((value) => value.toLocaleLowerCase('ko-KR').includes(query))) return false;
       return true;
