@@ -20,7 +20,9 @@ const EXPECTED_WIDE_PAPER_SERIES: Record<string, string[]> = {
 
 describe('wide paper wallpaper catalog', () => {
   it('publishes all 145 Trendy variants without bundled images', () => {
-    const products = sampleData.ALL_SAMPLES.filter((sample) => sample.collection === '광폭합지');
+    const products = sampleData.ALL_SAMPLES.filter(
+      (sample) => sample.brand === '개나리' && sample.collection === '광폭합지',
+    );
 
     expect(products).toHaveLength(145);
     expect(new Set(products.map((sample) => sample.productNo)).size).toBe(145);
@@ -34,7 +36,7 @@ describe('wide paper wallpaper catalog', () => {
       .flatMap(([series, variants]) => variants.map((variant) => `${series}-${variant}`))
       .sort();
     const actual = sampleData.ALL_SAMPLES
-      .filter((sample) => sample.collection === '광폭합지')
+      .filter((sample) => sample.brand === '개나리' && sample.collection === '광폭합지')
       .map((sample) => sample.productNo)
       .sort();
 

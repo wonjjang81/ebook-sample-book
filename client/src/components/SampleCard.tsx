@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Pencil } from 'lucide-react';
+import { getProductThumb } from '@/hooks/useProductImage';
 
 interface SampleCardProps {
   sample: {
@@ -32,6 +33,8 @@ export function SampleCard({
   onEdit,
   className,
 }: SampleCardProps) {
+  const imageSrc = getProductThumb(sample.id, sample.image);
+
   return (
     <Card
       onClick={onClick}
@@ -42,9 +45,9 @@ export function SampleCard({
     >
       {/* Image Container */}
       <div className="relative w-full aspect-square bg-muted overflow-hidden">
-        {sample.image ? (
+        {imageSrc ? (
           <img
-            src={sample.image}
+            src={imageSrc}
             alt={sample.name}
             loading="lazy"
             decoding="async"

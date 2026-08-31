@@ -72,6 +72,10 @@ export interface Sample {
   categoryId?: number;
   materialType?: string;
   collection?: string;
+  color?: string;
+  colorFamily?: string;
+  pattern?: string;
+  grade?: string;
   description?: string;
   detailSections?: Array<{ title: string; description: string }>;
   sourceLabel?: string;
@@ -612,42 +616,244 @@ const LIVING_SAMPLES: Sample[] = LIVING_SERIES.flatMap(({ family, series, varian
   })
 );
 
+const SKETCH_COLLECTION_DESCRIPTION = '스케치는 일상의 감성을 다채로운 컬러와 질감으로 표현한 신한벽지의 감각적인 실크벽지 컬렉션입니다. 크랙스톤과 패널스톤, 패브릭, 페인트, 자연 모티프 등 폭넓은 디자인으로 공간의 분위기를 섬세하게 완성합니다.';
+
+const SKETCH_COMMON_DETAILS = [
+  { title: '다채로운 컬러와 디자인', description: '부드러운 뉴트럴 컬러부터 생기 있는 포인트 컬러까지 폭넓게 구성해 공간의 취향과 분위기에 맞춰 선택할 수 있습니다.' },
+  { title: '감각적인 입체 텍스처', description: '스톤, 직물, 코튼, 페인트 등 소재에서 영감을 얻은 표면 질감으로 벽면에 자연스러운 깊이감을 더합니다.' },
+  { title: '차분한 무지와 포인트 패턴', description: '일상 공간에 편안하게 어울리는 무지 제품과 정원, 테라조, 클래식 모티프의 포인트 디자인을 함께 제공합니다.' },
+  { title: '공간별로 고르는 폭넓은 구성', description: '거실과 침실의 메인 벽면부터 포인트 공간과 천장까지 활용할 수 있도록 다양한 제품군을 구성했습니다.' },
+];
+
+const SKETCH_SERIES = [
+  { family: '크랙스톤', series: '15132', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '섬세한 직물', series: '15131', variants: ['1', '2', '3', '4', '5', '6', '7', '8'] },
+  { family: '매트 피니시', series: '15130', variants: ['1', '2', '3', '4', '5', '6', '7', '8'] },
+  { family: '부드러운 촉감', series: '15123', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '패널스톤', series: '15128', variants: ['1', '2', '3', '4', '5', '6', '7', '8'] },
+  { family: '컬러블룸', series: '15127', variants: ['1', '2', '3', '4', '5', '6', '7'] },
+  { family: '딥스톤', series: '15126', variants: ['1', '2', '3', '4', '5', '6', '7'] },
+  { family: '러프 쉐이드', series: '15125', variants: ['1', '2', '3', '4'] },
+  { family: '색다른 느낌', series: '15124', variants: ['1', '2', '3', '4', '5'] },
+  { family: '도톰한 코튼', series: '15129', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '화려한 시선', series: '15122', variants: ['1', '2', '3', '4', '5', '6'] },
+  { family: '스페셜 페인트', series: '15121', variants: ['1', '2', '3', '4'] },
+  { family: '아트 테라조', series: '15120', variants: ['1', '2', '3'] },
+  { family: '핸디코트', series: '15112', variants: ['1', '2', '3'] },
+  { family: '모래알 터치', series: '15111', variants: ['1', '2'] },
+  { family: '규조토 샌드', series: '15118', variants: ['1', '2', '3'] },
+  { family: '그날의 약속', series: '15105', variants: ['1', '2', '3'] },
+  { family: '고요의 정원', series: '15116', variants: ['1', '2', '3', '4', '7'] },
+  { family: '한가로운 오후', series: '15113', variants: ['1', '2', '3'] },
+  { family: '일상의 온기', series: '15117', variants: ['1', '2', '3'] },
+  { family: '소중한 시간', series: '15119', variants: ['1', '2', '3', '5'] },
+  { family: '아침햇살', series: '15110', variants: ['1', '2', '3'] },
+  { family: '나만의 휴식', series: '15114', variants: ['1', '2', '6', '7'] },
+  { family: '조용한 사색', series: '15053', variants: ['1'] },
+  { family: '모던 클레이', series: '15115', variants: ['1'] },
+  { family: '즐거운 소식', series: '15106', variants: ['1', '2'] },
+  { family: '천장지', series: 'C9643', variants: ['10', '11', '20'] },
+  { family: '천장지', series: 'C8052', variants: ['1', '3'] },
+] as const;
+
+const SKETCH_SAMPLES: Sample[] = SKETCH_SERIES.flatMap(({ family, series, variants }) =>
+  variants.map((variant) => {
+    const productNo = `${series}-${variant}`;
+    return {
+      id: `sketch-${productNo.toLowerCase()}`,
+      productNo,
+      name: `스케치 ${family} ${productNo}`,
+      brand: '신한',
+      line: family,
+      materialType: '실크',
+      collection: '스케치',
+      specs: ['감각적인 실크벽지', family, '입체 텍스처', '다채로운 컬러', ...(family === '천장지' ? ['천장용'] : [])],
+      image: '',
+      description: SKETCH_COLLECTION_DESCRIPTION,
+      detailSections: [...SKETCH_COMMON_DETAILS],
+      sourceLabel: '신한벽지 SKETCH all new 공개 카탈로그',
+    };
+  })
+);
+
+const IRIS_COLLECTION_DESCRIPTION = '아이리스는 트렌디한 질감과 베이직 컬러, 공간의 분위기를 바꾸는 포인트 컬러를 폭넓게 구성한 KCC신한벽지의 친환경 광폭 합지벽지 컬렉션입니다. 일반 벽면부터 키즈, 전통 문양, 천장과 타일 패턴까지 다양한 공간에 맞춰 선택할 수 있습니다.';
+
+const IRIS_COMMON_DETAILS = [
+  { title: '내구성 강화 코팅', description: '기존 종이·잉크·기능성 인쇄 구조에 내구성 강화 코팅을 더해 표면 내구성을 높였습니다.' },
+  { title: '더 안정적인 일상 내구성', description: '카탈로그 시험 결과 기준으로 기존 제품 대비 마찰 견뢰도는 100%, 인장 강도는 20% 향상되었습니다.' },
+  { title: '폭넓은 디자인과 컬러', description: '플라스터, 패브릭, 스톤, 페인트 질감부터 키즈와 포인트 패턴까지 다양한 공간에 어울리는 디자인을 제공합니다.' },
+  { title: '광폭 합지 규격', description: '폭 0.93m, 길이 17.75m 규격의 종이 합지벽지로 구성되어 있습니다. 실제 색상과 엠보는 실물 샘플 확인을 권장합니다.' },
+];
+
+const IRIS_SERIES = [
+  { design: '코르델', series: '6892', variants: ['1', '2', '3', '4', '5', '6', '7'] },
+  { design: '크리즈', series: '6891', variants: ['1', '2', '3', '4', '5'] },
+  { design: '샤드', series: '6890', variants: ['1', '2', '3', '4', '5', '6'] },
+  { design: '바티스', series: '6889', variants: ['1', '2', '3', '4', '5', '6'] },
+  { design: '펌블', series: '6888', variants: ['1', '2', '3', '4', '5', '6'] },
+  { design: '스너그', series: '6887', variants: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'] },
+  { design: '제이프', series: '6886', variants: ['1', '2', '3', '4'] },
+  { design: '네슬', series: '6885', variants: ['1', '2', '3', '4', '5'] },
+  { design: '라플', series: '6884', variants: ['1', '2', '3', '4', '5'] },
+  { design: '글레이', series: '6873', variants: ['1', '2', '3', '4', '5', '6'] },
+  { design: '플라넬', series: '6872', variants: ['1', '2', '3', '5'] },
+  { design: '벡터', series: '6871', variants: ['1', '2', '3', '6', '7'] },
+  { design: '심스톤', series: '6883', variants: ['1', '2'] },
+  { design: '크레터', series: '6882', variants: ['1', '2', '3'] },
+  { design: '몰러', series: '6791', variants: ['1', '7'] },
+  { design: '엠보스', series: '6866', variants: ['1', '2'] },
+  { design: '도트스톤', series: '6867', variants: ['1', '2'] },
+  { design: '돌출콘크리트', series: '6771', variants: ['2'] },
+  { design: '미스틱', series: '6881', variants: ['1'] },
+  { design: '덴버', series: '6858', variants: ['1'] },
+  { design: '텍톤', series: '6880', variants: ['1', '2', '3'] },
+  { design: '동양화', series: '6879', variants: ['1'] },
+  { design: '한지', series: '6766', variants: ['1'] },
+  { design: '레온', series: '6804', variants: ['2'] },
+  { design: '상평통보', series: '6767', variants: ['1'] },
+  { design: '시티빌', series: '6878', variants: ['1'] },
+  { design: '슈츠', series: '6792', variants: ['2', '5'] },
+  { design: '르꼴레', series: '6877', variants: ['1'] },
+  { design: '아벨', series: '6851', variants: ['1', '2'] },
+  { design: '큐티파이', series: '6876', variants: ['1'] },
+  { design: '슬릿', series: '6875', variants: ['1', '2'] },
+  { design: '뭉게뭉게', series: '6776', variants: ['1'] },
+  { design: '링크', series: '6852', variants: ['1', '2', '3'] },
+  { design: '벤지', series: '6853', variants: ['1', '2', '3'] },
+  { design: '펠트', series: '6869', variants: ['1', '2', '3'] },
+  { design: '루키', series: '6794', variants: ['2', '3'] },
+  { design: '에반', series: '6870', variants: ['1', '2', '3'] },
+  { design: '오즈', series: '6861', variants: ['1', '2'] },
+  { design: '롤링샌드', series: 'C6819', variants: ['1', '2'] },
+  { design: '스톤샌드', series: 'C7335', variants: ['1', '10'] },
+  { design: '아트실링', series: 'C7475', variants: ['1', '10', '11'] },
+  { design: '네오타일', series: 'T126', variants: ['1', '2'] },
+  { design: '심플타일', series: 'T124', variants: ['1', '2'] },
+  { design: '마블', series: 'T101', variants: ['1'] },
+  { design: '스톤', series: 'T121', variants: ['2'] },
+] as const;
+
+function getIrisLine(series: string, design: string): string {
+  if (series.startsWith('C')) return '천장지';
+  if (series.startsWith('T')) return '타일벽지';
+  return design;
+}
+
+const IRIS_SAMPLES: Sample[] = IRIS_SERIES.flatMap(({ design, series, variants }) =>
+  variants.map((variant) => {
+    const productNo = `${series}-${variant}`;
+    const line = getIrisLine(series, design);
+    return {
+      id: `iris-${productNo.toLowerCase()}`,
+      productNo,
+      name: `아이리스 ${design} ${productNo}`,
+      brand: '신한',
+      line,
+      materialType: '합지',
+      collection: '광폭합지',
+      specs: [
+        '친환경 광폭합지',
+        design,
+        '내구성 강화 코팅',
+        ...(line === '천장지' ? ['천장용'] : []),
+        ...(line === '타일벽지' ? ['타일 패턴'] : []),
+      ],
+      image: '',
+      description: IRIS_COLLECTION_DESCRIPTION,
+      detailSections: [...IRIS_COMMON_DETAILS],
+      sourceLabel: 'KCC신한벽지 IRIS 공개 카탈로그',
+    };
+  })
+);
+
+const DIAMANT_FORTIS_COLLECTION_DESCRIPTION = '디아망 포티스는 리얼 프린팅으로 자연 소재의 섬세한 질감과 은은한 색감을 구현하고, 필름처럼 강한 표면 내구성과 일반 벽지처럼 편리한 시공성을 함께 제공하는 LX Z:IN의 프리미엄 실크벽지 컬렉션입니다.';
+
+const DIAMANT_FORTIS_COMMON_DETAILS = [
+  { title: '필름처럼 강한 내구성', description: '강한 표면 강도로 코너와 무걸레받이 부위에서 발생하기 쉬운 찢김과 긁힘 부담을 줄여줍니다.' },
+  { title: '반려동물 친화 스크래치 케어', description: '전 제품이 한국애견협회 PS인증 내스크래치 기준을 만족하며 Erichsen Scratch Test 기준 14N 이상의 성능을 제공합니다.' },
+  { title: '필름보다 쉬운 시공성', description: '일반 벽지와 동일한 시공법으로 깔끔하게 마감할 수 있고, 시공 후 이음매가 잘 보이지 않아 전폭 같은 고급스러움을 연출합니다.' },
+  { title: '리얼 프린팅 디자인', description: '반복을 줄인 대형 규격의 유러피안 플라스터와 프렌치 워시 등 자연 소재의 깊이와 아트 페인팅의 감성을 사실적으로 재현합니다.' },
+];
+
+const DIAMANT_FORTIS_SERIES = [
+  { theme: 'Contemporary Stone', design: '유러피안 플라스터', series: 'DF001', colors: { '01': '샌드 크림', '02': '크림 카라멜' } },
+  { theme: 'Contemporary Stone', design: '프렌치 워시', series: 'DF002', colors: { '01': '아이스 미스트', '02': '샌드 그레이' } },
+  { theme: 'Contemporary Stone', design: '솔리드 페인팅', series: 'DF003', colors: { '01': '퓨어 화이트', '02': '에그쉘 화이트', '03': '포세린 화이트', '04': '프로즌 크림', '05': '바닐라 크림', '06': '오트밀', '07': '버터 크림', '08': '애프리콧', '09': '애쉬 베이지' } },
+  { theme: 'Contemporary Stone', design: '스웨이드 페인트', series: 'DF004', colors: { '01': '화이트', '02': '크림', '03': '샌드 그레이지', '04': '화이트 블러쉬', '05': '스모크 그레이', '06': '카푸치노' } },
+  { theme: 'Authentic Naturals', design: '마이크로 시멘트', series: 'DF005', colors: { '01': '수퍼 화이트', '02': '카밍 크림', '03': '스노우 그레이', '04': '포그 미스트' } },
+  { theme: 'Authentic Naturals', design: '샌드 스톤', series: 'DF006', colors: { '01': '클라우드 화이트', '02': '샌드 그레이', '03': '토프' } },
+  { theme: 'Authentic Naturals', design: '브러쉬드 페인트', series: 'DF007', colors: { '01': '브러쉬드 화이트', '02': '페일 그레이', '03': '듄 화이트', '04': '마스카포네', '05': '크림 그레이', '06': '스모크 그레이' } },
+  { theme: 'Authentic Naturals', design: '스타코', series: 'DF008', colors: { '01': '화이트', '02': '미스트 그레이지', '03': '모카 크림', '04': '런던 포그' } },
+  { theme: 'Authentic Naturals', design: '샌드 웨이브', series: 'DF010', colors: { '01': '라이트 그레이' } },
+  { theme: 'Tactile Reality', design: '컬러풀 트위드', series: 'DF011', colors: { '01': '컬러풀 그린' } },
+  { theme: 'Tactile Reality', design: '마이크로 코튼', series: 'DF013', colors: { '01': '코튼 화이트', '02': '크리미 코튼', '03': '클라우드 그레이', '04': '모카 크림', '05': '웜 다크 그레이' } },
+  { theme: 'Tactile Reality', design: '린넨', series: 'DF014', colors: { '01': '화이트', '02': '그린 미스트', '03': '화이트 그레이', '04': '웜 그레이', '05': '세이지 그린' } },
+  { theme: 'Tactile Reality', design: '심플 부클레', series: 'DF015', colors: { '01': '크림 바닐라', '02': '웜 그레이', '03': '실버 그레이', '04': '로즈 블러쉬' } },
+  { theme: 'Authentic Naturals', design: '크랙 스톤', series: 'DF016', colors: { '01': '스톤 크림 그레이' } },
+  { theme: 'Authentic Naturals', design: '트레버틴', series: 'DF017', colors: { '01': '라이트 크림' } },
+  { theme: 'Tactile Reality', design: '소프트 니트', series: 'DF018', colors: { '01': '화이트', '02': '클린 그레이', '03': '클래식 그레이', '04': '스모크 그레이' } },
+] as const;
+
+const DIAMANT_FORTIS_SAMPLES: Sample[] = DIAMANT_FORTIS_SERIES.flatMap(({ theme, design, series, colors }) =>
+  Object.entries(colors).map(([variant, color]) => {
+    const productNo = `${series}-${variant}`;
+    return {
+      id: `diamant-fortis-${productNo.toLowerCase()}`,
+      productNo,
+      name: `디아망 포티스 ${design} ${color} ${productNo}`,
+      brand: 'LX',
+      line: design,
+      materialType: '실크',
+      collection: '디아망포티스',
+      color,
+      pattern: design,
+      grade: '프리미엄',
+      specs: ['프리미엄 실크벽지', theme, design, '고내구성', 'PS인증 14N 이상'],
+      image: '',
+      description: DIAMANT_FORTIS_COLLECTION_DESCRIPTION,
+      detailSections: [...DIAMANT_FORTIS_COMMON_DETAILS],
+      sourceLabel: 'LX Z:IN 디아망 포티스 공식 샘플북',
+    };
+  })
+);
+
 export function ensureCatalogCollections<T>(source: T): T {
   const next: any = structuredClone(source);
   const wallpaper = next.find((category: any) => category.id === 1 || category.name === '도배');
   const gaenari = wallpaper?.brands.find((brand: any) => brand.name === '개나리');
-  if (!gaenari) return next;
+  if (gaenari) {
 
-  let silk = gaenari.materialTypes?.find((materialType: any) => materialType.name === '실크벽지');
-  if (!silk) {
-    silk = gaenari.materialTypes?.find((materialType: any) => materialType.name === '실크');
-    if (silk) silk.name = '실크벽지';
-  }
-  if (!silk) {
-    silk = { name: '실크벽지', groups: [] };
-    gaenari.materialTypes = [...(gaenari.materialTypes ?? []), silk];
-  }
+    let silk = gaenari.materialTypes?.find((materialType: any) => materialType.name === '실크벽지');
+    if (!silk) {
+      silk = gaenari.materialTypes?.find((materialType: any) => materialType.name === '실크');
+      if (silk) silk.name = '실크벽지';
+    }
+    if (!silk) {
+      silk = { name: '실크벽지', groups: [] };
+      gaenari.materialTypes = [...(gaenari.materialTypes ?? []), silk];
+    }
 
-  const collections = [
-    { name: '프리모', lines: ['세이프가드', '플라스터', '페인트', '패브릭', '천장용'] },
-    { name: '로하스+', lines: ['플라스터', '위브', '디자인', '페인트', '천장용'] },
-    { name: '아트북', lines: ['패브릭', '플라스터', '페인트', '텍스처', '기능성', '피너츠', '천장용'] },
-  ];
-  collections.reverse().forEach((collection) => {
-    const existing = silk.groups?.find((group: any) => group.name === collection.name);
-    if (existing) existing.lines = Array.from(new Set([...(existing.lines ?? []), ...collection.lines]));
-    else silk.groups = [collection, ...(silk.groups ?? [])];
-  });
+    const collections = [
+      { name: '프리모', lines: ['세이프가드', '플라스터', '페인트', '패브릭', '천장용'] },
+      { name: '로하스+', lines: ['플라스터', '위브', '디자인', '페인트', '천장용'] },
+      { name: '아트북', lines: ['패브릭', '플라스터', '페인트', '텍스처', '기능성', '피너츠', '천장용'] },
+    ];
+    collections.reverse().forEach((collection) => {
+      const existing = silk.groups?.find((group: any) => group.name === collection.name);
+      if (existing) existing.lines = Array.from(new Set([...(existing.lines ?? []), ...collection.lines]));
+      else silk.groups = [collection, ...(silk.groups ?? [])];
+    });
 
-  let paper = gaenari.materialTypes?.find((materialType: any) => materialType.name === '합지');
-  if (!paper) {
-    paper = { name: '합지', groups: [] };
-    gaenari.materialTypes = [...(gaenari.materialTypes ?? []), paper];
+    let paper = gaenari.materialTypes?.find((materialType: any) => materialType.name === '합지');
+    if (!paper) {
+      paper = { name: '합지', groups: [] };
+      gaenari.materialTypes = [...(gaenari.materialTypes ?? []), paper];
+    }
+    const widePaper = { name: '광폭합지', lines: ['패브릭', '플라스터·페인트', '디자인', '키즈', '타일패턴', '천장용'] };
+    const existingWidePaper = paper.groups?.find((group: any) => group.name === widePaper.name);
+    if (existingWidePaper) existingWidePaper.lines = Array.from(new Set([...(existingWidePaper.lines ?? []), ...widePaper.lines]));
+    else paper.groups = [widePaper, ...(paper.groups ?? [])];
   }
-  const widePaper = { name: '광폭합지', lines: ['패브릭', '플라스터·페인트', '디자인', '키즈', '타일패턴', '천장용'] };
-  const existingWidePaper = paper.groups?.find((group: any) => group.name === widePaper.name);
-  if (existingWidePaper) existingWidePaper.lines = Array.from(new Set([...(existingWidePaper.lines ?? []), ...widePaper.lines]));
-  else paper.groups = [widePaper, ...(paper.groups ?? [])];
 
   const shinhan = wallpaper?.brands.find((brand: any) => brand.name === '신한');
   if (shinhan) {
@@ -670,6 +876,43 @@ export function ensureCatalogCollections<T>(source: T): T {
     const existingLiving = shinhanSilk.groups?.find((group: any) => group.name === living.name);
     if (existingLiving) existingLiving.lines = Array.from(new Set([...(existingLiving.lines ?? []), ...living.lines]));
     else shinhanSilk.groups = [living, ...(shinhanSilk.groups ?? [])];
+
+    const sketch = { name: '스케치', lines: Array.from(new Set(SKETCH_SERIES.map((series) => series.family))) };
+    const existingSketch = shinhanSilk.groups?.find((group: any) => group.name === sketch.name);
+    if (existingSketch) existingSketch.lines = Array.from(new Set([...(existingSketch.lines ?? []), ...sketch.lines]));
+    else shinhanSilk.groups = [sketch, ...(shinhanSilk.groups ?? [])];
+
+    let shinhanPaper = shinhan.materialTypes?.find((materialType: any) => materialType.name === '합지');
+    if (!shinhanPaper) {
+      shinhanPaper = { name: '합지', groups: [] };
+      shinhan.materialTypes = [...(shinhan.materialTypes ?? []), shinhanPaper];
+    }
+    const iris = {
+      name: '광폭합지',
+      lines: Array.from(new Set(IRIS_SERIES.map(({ design, series }) => getIrisLine(series, design)))),
+    };
+    const existingIris = shinhanPaper.groups?.find((group: any) => group.name === iris.name);
+    if (existingIris) existingIris.lines = Array.from(new Set([...(existingIris.lines ?? []), ...iris.lines]));
+    else shinhanPaper.groups = [iris, ...(shinhanPaper.groups ?? [])];
+  }
+
+  const lx = wallpaper?.brands.find((brand: any) => brand.name === 'LX');
+  if (lx) {
+    let lxSilk = lx.materialTypes?.find((materialType: any) => materialType.name === '실크');
+    if (!lxSilk) {
+      lxSilk = { name: '실크', groups: [] };
+      lx.materialTypes = [...(lx.materialTypes ?? []), lxSilk];
+    }
+    const diamantFortis = {
+      name: '디아망포티스',
+      lines: Array.from(new Set(DIAMANT_FORTIS_SERIES.map((series) => series.design))),
+    };
+    const existingDiamantFortis = lxSilk.groups?.find((group: any) => group.name === diamantFortis.name);
+    if (existingDiamantFortis) {
+      existingDiamantFortis.lines = Array.from(new Set([...(existingDiamantFortis.lines ?? []), ...diamantFortis.lines]));
+    } else {
+      lxSilk.groups = [diamantFortis, ...(lxSilk.groups ?? [])];
+    }
   }
 
   return next;
@@ -679,7 +922,7 @@ export function sampleMatchesCatalogSelection(
   sample: Sample,
   selection: { group?: string; line?: string },
 ): boolean {
-  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드', '파사드', '리빙'].includes(selection.group) && sample.collection !== selection.group) return false;
+  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드', '파사드', '리빙', '스케치', '디아망포티스'].includes(selection.group) && sample.collection !== selection.group) return false;
   if (selection.line && sample.line !== selection.line) return false;
   return true;
 }
@@ -694,6 +937,9 @@ export const MOCK_SAMPLES: Record<number, Sample[]> = {
     ...WALLGUARD_SAMPLES,
     ...FACADE_SAMPLES,
     ...LIVING_SAMPLES,
+    ...SKETCH_SAMPLES,
+    ...IRIS_SAMPLES,
+    ...DIAMANT_FORTIS_SAMPLES,
     // --- 프리모 컬렉션 ---
     { id: '1-1', productNo: '92102-1', name: '프리모 크랙 화이트', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-1.jpg' },
     { id: '1-2', productNo: '92102-2', name: '프리모 크랙 아이보리', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-2.jpg' },
@@ -809,6 +1055,7 @@ export function getCatalogLinemates(
 ): Sample[] {
   return samples.filter((candidate) =>
     candidate.categoryId === sample.categoryId
+    && candidate.brand === sample.brand
     && candidate.line === sample.line
     && candidate.collection === sample.collection
   );

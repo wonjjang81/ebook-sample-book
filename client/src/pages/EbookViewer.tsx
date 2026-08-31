@@ -19,6 +19,8 @@ import { Label } from '@/components/ui/label';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ensureCatalogCollections, getCatalogSamples, getManagedCategories, sampleMatchesCatalogSelection, saveCatalogSample, deleteCatalogSample, type EditableSample } from '@/data/sampleData';
+import { getProductThumb } from '@/hooks/useProductImage';
+import { PRODUCT_COLOR_FAMILIES, getProductColorInfo, getProductPattern, matchesMaterialGrade, type MaterialGradeFilter } from '@/lib/productMetadata';
 
 // Mock 데이터 - 5단계 계층 구조 (카테고리 > 브랜드 > 소재유형 > 제품군 > 라인)
 const CATEGORIES = [
@@ -448,7 +450,7 @@ export default function EbookViewer() {
   const [sampleEditorOpen, setSampleEditorOpen] = useState(false);
   const [editingSampleId, setEditingSampleId] = useState<string | null>(null);
   const [catalogRevision, setCatalogRevision] = useState(0);
-  const [sampleForm, setSampleForm] = useState({ productNo: '', name: '', specs: '', image: '' });
+  const [sampleForm, setSampleForm] = useState({ productNo: '', name: '', specs: '', image: '', color: '', pattern: '' });
   const [selectedCategory, setSelectedCategory] = useState(1);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [selectedLine, setSelectedLine] = useState<string | null>(null);
@@ -459,6 +461,11 @@ export default function EbookViewer() {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterBrand, setFilterBrand] = useState('all');
+  const [filterMaterialGrade, setFilterMaterialGrade] = useState<MaterialGradeFilter>('all');
+  const [filterCollection, setFilterCollection] = useState('all');
+  const [filterPattern, setFilterPattern] = useState('all');
+  const [filterColor, setFilterColor] = useState('all');
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [likedProducts, setLikedProducts] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'browse' | 'selected' | 'liked'>('browse');
@@ -507,6 +514,10 @@ export default function EbookViewer() {
 
   const currentCategory = catalogCategories.find((c) => c.id === selectedCategory);
   const samples = getCatalogSamples().filter((sample) => sample.categoryId === selectedCategory);
+  const filterBrands = Array.from(new Set(samples.map((sample) => sample.brand))).sort((a, b) => a.localeCompare(b, 'ko-KR'));
+  const filterCollections = Array.from(new Set(samples.map((sample) => sample.collection).filter((value): value is string => Boolean(value)))).sort((a, b) => a.localeCompare(b, 'ko-KR'));
+  const filterPatterns = Array.from(new Set(samples.map(getProductPattern))).sort((a, b) => a.localeCompare(b, 'ko-KR'));
+  const hasQuickFilters = [filterBrand, filterMaterialGrade, filterCollection, filterPattern, filterColor].some((value) => value !== 'all');
   
   // 선택된 그룹에 속하는 라인 목록 계산 (5단계: materialType 경유)
   const currentGroupLines: string[] = (() => {
@@ -530,13 +541,18 @@ export default function EbookViewer() {
   const filteredSamples = sortProducts(
     samples.filter((s) => {
       if (selectedBrand && s.brand !== selectedBrand) return false;
+      if (filterBrand !== 'all' && s.brand !== filterBrand) return false;
+      if (!matchesMaterialGrade(s, filterMaterialGrade)) return false;
+      if (filterCollection !== 'all' && s.collection !== filterCollection) return false;
+      if (filterPattern !== 'all' && getProductPattern(s) !== filterPattern) return false;
+      if (filterColor !== 'all' && getProductColorInfo(s).family !== filterColor) return false;
       // materialType 필터 (실크/합지 등) — sample에 materialType 필드가 있는 경우
       if (selectedMaterialType && (s as any).materialType && (s as any).materialType !== selectedMaterialType) return false;
       if (!sampleMatchesCatalogSelection(s, { group: selectedGroup ?? undefined, line: selectedLine ?? undefined })) return false;
       // 그룹이 선택된 경우: 해당 그룹의 라인 목록으로 필터
       if (selectedGroup && currentGroupLines.length > 0 && !currentGroupLines.includes(s.line)) return false;
       const query = searchQuery.trim().toLocaleLowerCase('ko-KR');
-      if (query && ![s.productNo, s.name, s.brand, s.line, ...s.specs].some((value) => value.toLocaleLowerCase('ko-KR').includes(query))) return false;
+      if (query && ![s.productNo, s.name, s.brand, s.line, s.collection, s.color, getProductColorInfo(s).family, getProductPattern(s), ...s.specs].filter(Boolean).some((value) => value!.toLocaleLowerCase('ko-KR').includes(query))) return false;
       return true;
     }),
     browseSort
@@ -1067,17 +1083,17 @@ export default function EbookViewer() {
   };
   const openNewSampleInline = () => {
     setEditingSampleId(null);
-    setSampleForm({ productNo: '', name: '', specs: '', image: '' });
+    setSampleForm({ productNo: '', name: '', specs: '', image: '', color: '', pattern: '' });
     setSampleEditorOpen(true);
   };
   const openSampleInline = (sample: EditableSample) => {
     setEditingSampleId(sample.id);
-    setSampleForm({ productNo: sample.productNo, name: sample.name, specs: sample.specs.join(', '), image: sample.image });
+    setSampleForm({ productNo: sample.productNo, name: sample.name, specs: sample.specs.join(', '), image: sample.image, color: sample.color ?? '', pattern: sample.pattern ?? '' });
     setSampleEditorOpen(true);
   };
   const saveSampleInline = () => {
     if (!sampleForm.productNo.trim() || !sampleForm.name.trim() || !selectedBrand || !selectedLine) return;
-    saveCatalogSample({ id: editingSampleId ?? `custom-${Date.now()}`, productNo: sampleForm.productNo.trim(), name: sampleForm.name.trim(), brand: selectedBrand, line: selectedLine, specs: sampleForm.specs.split(',').map((item) => item.trim()).filter(Boolean), image: sampleForm.image.trim(), categoryId: selectedCategory, status: 'published', isCustom: true });
+    saveCatalogSample({ id: editingSampleId ?? `custom-${Date.now()}`, productNo: sampleForm.productNo.trim(), name: sampleForm.name.trim(), brand: selectedBrand, line: selectedLine, materialType: selectedMaterialType ?? undefined, collection: selectedGroup ?? undefined, color: sampleForm.color.trim() || undefined, pattern: sampleForm.pattern.trim() || undefined, specs: sampleForm.specs.split(',').map((item) => item.trim()).filter(Boolean), image: sampleForm.image.trim(), categoryId: selectedCategory, status: 'published', isCustom: true });
     setCatalogRevision((value) => value + 1);
     setSampleEditorOpen(false);
   };
@@ -1196,6 +1212,22 @@ export default function EbookViewer() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
                     />
+                  </div>
+                </div>
+                <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold"><SlidersHorizontal className="h-4 w-4" />제품 필터</div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">{filteredSamples.length}개 제품</span>
+                      {hasQuickFilters && <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => { setFilterBrand('all'); setFilterMaterialGrade('all'); setFilterCollection('all'); setFilterPattern('all'); setFilterColor('all'); }}>초기화</Button>}
+                    </div>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                    <Select value={filterBrand} onValueChange={setFilterBrand}><SelectTrigger aria-label="브랜드 필터"><SelectValue placeholder="브랜드" /></SelectTrigger><SelectContent><SelectItem value="all">브랜드 전체</SelectItem>{filterBrands.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
+                    <Select value={filterMaterialGrade} onValueChange={(value) => setFilterMaterialGrade(value as MaterialGradeFilter)}><SelectTrigger aria-label="소재 및 등급 필터"><SelectValue placeholder="소재·등급" /></SelectTrigger><SelectContent><SelectItem value="all">소재·등급 전체</SelectItem><SelectItem value="실크">실크</SelectItem><SelectItem value="합지">합지</SelectItem><SelectItem value="프리미엄">프리미엄</SelectItem></SelectContent></Select>
+                    <Select value={filterCollection} onValueChange={setFilterCollection}><SelectTrigger aria-label="컬렉션 필터"><SelectValue placeholder="컬렉션" /></SelectTrigger><SelectContent><SelectItem value="all">컬렉션 전체</SelectItem>{filterCollections.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
+                    <Select value={filterPattern} onValueChange={setFilterPattern}><SelectTrigger aria-label="패턴 필터"><SelectValue placeholder="패턴" /></SelectTrigger><SelectContent><SelectItem value="all">패턴 전체</SelectItem>{filterPatterns.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
+                    <Select value={filterColor} onValueChange={setFilterColor}><SelectTrigger aria-label="유사색상 필터"><SelectValue placeholder="유사색상" /></SelectTrigger><SelectContent><SelectItem value="all">유사색상 전체</SelectItem>{PRODUCT_COLOR_FAMILIES.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
                   </div>
                 </div>
                 {/* 정렬 버튼 */}
@@ -1341,22 +1373,27 @@ export default function EbookViewer() {
               <div className="space-y-3">
                 {getSelectedProductDetails().map((sample) => {
                   const sampleCategory = CATEGORIES.find(c => c.brands.some(b => b.name === sample.brand));
+                  const sampleImage = getProductThumb(sample.id, sample.image);
                   return (
                     <div key={sample.id} className="border border-border rounded-lg p-4 bg-card hover:shadow-md transition-shadow">
                       <div className="flex gap-4">
                         {/* 이미지 */}
                         <div className="flex-shrink-0">
-                          <img
-                            src={sample.image}
-                            alt={sample.name}
-                            className="w-24 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => {
-                              if (sampleCategory) {
-                                setSelectedCategory(sampleCategory.id);
-                                setActiveTab('browse');
-                              }
-                            }}
-                          />
+                          {sampleImage ? (
+                            <img
+                              src={sampleImage}
+                              alt={sample.name}
+                              className="w-24 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                if (sampleCategory) {
+                                  setSelectedCategory(sampleCategory.id);
+                                  setActiveTab('browse');
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="flex h-24 w-24 items-center justify-center rounded bg-muted text-xs text-muted-foreground">이미지 없음</div>
+                          )}
                         </div>
                         {/* 제품 정보 */}
                         <div className="flex-1 space-y-2">
@@ -1553,22 +1590,27 @@ export default function EbookViewer() {
               <div className="space-y-3">
                 {getLikedProductDetails().map((sample) => {
                   const sampleCategory = CATEGORIES.find(c => c.brands.some(b => b.name === sample.brand));
+                  const sampleImage = getProductThumb(sample.id, sample.image);
                   return (
                     <div key={sample.id} className="border border-border rounded-lg p-4 bg-card hover:shadow-md transition-shadow">
                       <div className="flex gap-4">
                         {/* 이미지 */}
                         <div className="flex-shrink-0">
-                          <img
-                            src={sample.image}
-                            alt={sample.name}
-                            className="w-24 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => {
-                              if (sampleCategory) {
-                                setSelectedCategory(sampleCategory.id);
-                                setActiveTab('browse');
-                              }
-                            }}
-                          />
+                          {sampleImage ? (
+                            <img
+                              src={sampleImage}
+                              alt={sample.name}
+                              className="w-24 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                if (sampleCategory) {
+                                  setSelectedCategory(sampleCategory.id);
+                                  setActiveTab('browse');
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="flex h-24 w-24 items-center justify-center rounded bg-muted text-xs text-muted-foreground">이미지 없음</div>
+                          )}
                         </div>
                         {/* 제품 정보 */}
                         <div className="flex-1 space-y-2">
@@ -1657,7 +1699,7 @@ export default function EbookViewer() {
     </Dialog>
 
     <Dialog open={sampleEditorOpen} onOpenChange={setSampleEditorOpen}>
-      <DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle>{editingSampleId ? '샘플 편집' : '새 샘플 추가'}</DialogTitle></DialogHeader><div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-muted-foreground">{currentCategory?.name} &gt; {selectedBrand} &gt; {selectedMaterialType} &gt; {selectedGroup} &gt; <strong className="text-foreground">{selectedLine}</strong></div><div className="grid gap-4 py-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="inline-product-no">품번 *</Label><Input id="inline-product-no" value={sampleForm.productNo} onChange={(event) => setSampleForm({ ...sampleForm, productNo: event.target.value })} /></div><div className="space-y-2"><Label htmlFor="inline-name">제품명 *</Label><Input id="inline-name" value={sampleForm.name} onChange={(event) => setSampleForm({ ...sampleForm, name: event.target.value })} /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="inline-specs">특징·사양</Label><Input id="inline-specs" value={sampleForm.specs} onChange={(event) => setSampleForm({ ...sampleForm, specs: event.target.value })} placeholder="쉼표로 구분" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="inline-image">이미지 경로</Label><Input id="inline-image" value={sampleForm.image} onChange={(event) => setSampleForm({ ...sampleForm, image: event.target.value })} placeholder="/images/wallpaper/example.jpg" /></div></div><div className="flex justify-between gap-2"><div>{editingSampleId && <Button variant="ghost" className="text-destructive" onClick={() => { if (window.confirm('이 샘플을 삭제하시겠습니까?')) { deleteCatalogSample(editingSampleId); setCatalogRevision((value) => value + 1); setSampleEditorOpen(false); } }}><Trash2 className="mr-2 h-4 w-4" />삭제</Button>}</div><div className="flex gap-2"><Button variant="outline" onClick={() => setSampleEditorOpen(false)}>취소</Button><Button onClick={saveSampleInline} disabled={!sampleForm.productNo.trim() || !sampleForm.name.trim()}>저장</Button></div></div></DialogContent>
+      <DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle>{editingSampleId ? '샘플 편집' : '새 샘플 추가'}</DialogTitle></DialogHeader><div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-muted-foreground">{currentCategory?.name} &gt; {selectedBrand} &gt; {selectedMaterialType} &gt; {selectedGroup} &gt; <strong className="text-foreground">{selectedLine}</strong></div><div className="grid gap-4 py-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="inline-product-no">품번 *</Label><Input id="inline-product-no" value={sampleForm.productNo} onChange={(event) => setSampleForm({ ...sampleForm, productNo: event.target.value })} /></div><div className="space-y-2"><Label htmlFor="inline-name">제품명 *</Label><Input id="inline-name" value={sampleForm.name} onChange={(event) => setSampleForm({ ...sampleForm, name: event.target.value })} /></div><div className="space-y-2"><Label htmlFor="inline-color">색상</Label><Input id="inline-color" value={sampleForm.color} onChange={(event) => setSampleForm({ ...sampleForm, color: event.target.value })} placeholder="예: 미스트 그레이지" /></div><div className="space-y-2"><Label htmlFor="inline-pattern">패턴</Label><Input id="inline-pattern" value={sampleForm.pattern} onChange={(event) => setSampleForm({ ...sampleForm, pattern: event.target.value })} placeholder="예: 스타코" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="inline-specs">특징·사양</Label><Input id="inline-specs" value={sampleForm.specs} onChange={(event) => setSampleForm({ ...sampleForm, specs: event.target.value })} placeholder="쉼표로 구분" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="inline-image">이미지 경로</Label><Input id="inline-image" value={sampleForm.image} onChange={(event) => setSampleForm({ ...sampleForm, image: event.target.value })} placeholder="/images/wallpaper/example.jpg" /></div></div><div className="flex justify-between gap-2"><div>{editingSampleId && <Button variant="ghost" className="text-destructive" onClick={() => { if (window.confirm('이 샘플을 삭제하시겠습니까?')) { deleteCatalogSample(editingSampleId); setCatalogRevision((value) => value + 1); setSampleEditorOpen(false); } }}><Trash2 className="mr-2 h-4 w-4" />삭제</Button>}</div><div className="flex gap-2"><Button variant="outline" onClick={() => setSampleEditorOpen(false)}>취소</Button><Button onClick={saveSampleInline} disabled={!sampleForm.productNo.trim() || !sampleForm.name.trim()}>저장</Button></div></div></DialogContent>
     </Dialog>
 
     {/* PDF 미리보기 Dialog */}

@@ -14,6 +14,7 @@ import {
   getStoredThumb, getStoredOrig,
   uploadProductImage, deleteProductImage
 } from '@/hooks/useProductImage';
+import { getProductColorInfo, getProductPattern, getSimilarColorSamples } from '@/lib/productMetadata';
 
 export default function SampleDetail() {
   const [, navigate] = useLocation();
@@ -23,6 +24,7 @@ export default function SampleDetail() {
   const [isImageExpanded, setIsImageExpanded] = useState(false);
   const [isProductSelected, setIsProductSelected] = useState(false);
   const [isProductLiked, setIsProductLiked] = useState(false);
+  const [relatedView, setRelatedView] = useState<'series' | 'color'>('series');
 
   // 업로드된 이미지 상태 (null이면 기본 이미지 사용)
   const [thumbSrc, setThumbSrc] = useState<string | null>(null);
@@ -45,6 +47,11 @@ export default function SampleDetail() {
   const linemates = sample
     ? getCatalogLinemates(sample, ALL_SAMPLES)
     : [];
+  const collectionmates = sample?.collection
+    ? ALL_SAMPLES.filter((candidate) => candidate.categoryId === sample.categoryId && candidate.brand === sample.brand && candidate.collection === sample.collection)
+    : linemates;
+  const similarColors = sample ? getSimilarColorSamples(sample, ALL_SAMPLES) : [];
+  const relatedSamples = relatedView === 'series' ? linemates : similarColors;
   const currentIdx = linemates.findIndex((s) => s.id === sampleId);
   const prevSample = currentIdx > 0 ? linemates[currentIdx - 1] : null;
   const nextSample = currentIdx < linemates.length - 1 ? linemates[currentIdx + 1] : null;
@@ -113,6 +120,8 @@ export default function SampleDetail() {
 
   const categoryName = getCategoryName(sample.categoryId ?? 1);
   const hasCustomImage = !!thumbSrc;
+  const colorInfo = getProductColorInfo(sample);
+  const pattern = getProductPattern(sample);
 
   return (
     <div className="min-h-screen bg-background">
@@ -320,14 +329,19 @@ export default function SampleDetail() {
                 </div>
               )}
 
-              {/* 같은 라인 썸네일 그리드 */}
-              {linemates.length > 1 && (
+              {/* 제품 계열 / 유사색상 탐색 */}
+              {(linemates.length > 1 || similarColors.length > 0) && (
                 <div>
-                  <p className="text-xs text-muted-foreground mb-2 font-medium">
-                    {sample.line} 컬렉션 ({linemates.length}종)
+                  <div className="mb-2 flex gap-1 rounded-lg bg-muted p-1">
+                    <Button type="button" size="sm" variant={relatedView === 'series' ? 'default' : 'ghost'} className="h-7 flex-1 text-xs" onClick={() => setRelatedView('series')}>제품계열 {linemates.length}</Button>
+                    <Button type="button" size="sm" variant={relatedView === 'color' ? 'default' : 'ghost'} className="h-7 flex-1 text-xs" disabled={!similarColors.length} onClick={() => setRelatedView('color')}>유사색상 {similarColors.length}</Button>
+                  </div>
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    {relatedView === 'series' ? `${sample.line} 제품계열` : `${colorInfo.family} 색상군`}
+                    {sample.collection && ` · ${sample.collection} 컬렉션 ${collectionmates.length}종`}
                   </p>
                   <div className="grid grid-cols-4 gap-1.5">
-                    {linemates.map((s) => {
+                    {relatedSamples.map((s) => {
                       const storedThumb = getStoredThumb(s.id);
                       return (
                         <div
@@ -418,6 +432,14 @@ export default function SampleDetail() {
                           <p className="font-semibold">{sample.line}</p>
                         </div>
                       )}
+                      <div className="border-b border-border pb-3">
+                        <p className="text-sm text-muted-foreground font-medium mb-1">색상</p>
+                        <p className="flex items-center gap-2 font-semibold"><span className="h-4 w-4 rounded-full border" style={{ backgroundColor: colorInfo.hex }} />{colorInfo.name}<span className="text-xs font-normal text-muted-foreground">({colorInfo.family})</span></p>
+                      </div>
+                      <div className="border-b border-border pb-3">
+                        <p className="text-sm text-muted-foreground font-medium mb-1">패턴</p>
+                        <p className="font-semibold">{pattern}</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
