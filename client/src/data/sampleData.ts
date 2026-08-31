@@ -817,6 +817,70 @@ const DIAMANT_FORTIS_SAMPLES: Sample[] = DIAMANT_FORTIS_SERIES.flatMap(({ theme,
   })
 );
 
+const DIAMANT_COLLECTION_DESCRIPTION = '디아망 아뜰리에는 플라스터, 스톤, 위빙, 스테디의 다채로운 질감과 뉴트럴 중심의 색상을 구성한 LX Z:IN 프리미엄 실크벽지 컬렉션입니다.';
+
+const DIAMANT_COMMON_DETAILS = [
+  { title: '네 가지 텍스처 컬렉션', description: '플라스터, 스톤, 위빙, 스테디로 구분된 제품군에서 공간에 어울리는 표면 질감을 선택할 수 있습니다.' },
+  { title: '폭넓은 색상 선택', description: '화이트와 크림, 베이지, 그레이지, 그레이 계열을 중심으로 민트, 블루, 그린과 테라코타 포인트 색상을 함께 제공합니다.' },
+  { title: '제품계열별 탐색', description: '회벽과 스타코, 린넨, 스톤 등 제품계열과 유사색상 기준으로 원하는 제품을 비교할 수 있습니다.' },
+  { title: '천장용 추천 제품', description: '공식 샘플북에서 별도로 제안하는 천장용 제품은 제품 사양 태그로 확인할 수 있습니다.' },
+];
+
+const DIAMANT_SERIES = [
+  { theme: '플라스터', design: '백야', colors: { 'PR058-01': '블랙 화이트' } },
+  { theme: '플라스터', design: '마띠에르', colors: { 'PR043-01': '순백', 'PR043-02': '크림', 'PR043-03': '뉴트럴 화이트', 'PR043-04': '라이트 그레이', 'PR043-05': '포그 그레이', 'PR043-06': '딥 그레이', 'PR043-07': '블랑 그레이지' } },
+  { theme: '플라스터', design: '노스텔라', colors: { 'PR055-01': '피치' } },
+  { theme: '플라스터', design: '샌드 스타코', colors: { 'PR044-01': '화이트', 'PR044-02': '라이트 그레이', 'PR044-03': '웜 화이트', 'PR044-04': '애쉬 베이지', 'PR044-05': '토프', 'PR044-06': '스톤 그레이지' } },
+  { theme: '플라스터', design: '테라노바', colors: { 'PR045-01': '스톤 화이트', 'PR045-02': '미스티 그레이', 'PR045-03': '그레이', 'PR045-04': '잿빛 그레이', 'PR045-05': '콘크리트 그레이' } },
+  { theme: '플라스터', design: '브러쉬드월', colors: { 'PR046-01': '스노우 화이트', 'PR046-02': '크림 베이지', 'PR046-03': '그레이지', 'PR046-04': '피치 테라코타', 'PR046-05': '그레이' } },
+  { theme: '스톤', design: '레이어드 스톤', colors: { 'PR047-01': '딥 스톤 그레이' } },
+  { theme: '스톤', design: '마르모아', colors: { 'PR048-01': '퓨어 화이트', 'PR048-02': '포세린 화이트', 'PR048-03': '도브 그레이', 'PR048-04': '미스티 웜 그레이' } },
+  { theme: '스톤', design: '라임 스톤', colors: { 'PR049-01': '라임 크림', 'PR049-02': '스톤 그레이' } },
+  { theme: '스톤', design: '실버 그라나이트', colors: { 'PR050-01': '스페이스 그레이' } },
+  { theme: '스톤', design: '자이언트 스톤', colors: { 'PR016-01': '그레이' } },
+  { theme: '스톤', design: '호라이즌', colors: { 'PR051-01': '화이트', 'PR051-02': '클라우디 블루' } },
+  { theme: '스톤', design: '세로회벽', colors: { 'PR052-01': '미스티 화이트', 'PR052-02': '그레이' } },
+  { theme: '위빙', design: '아티장 린넨', colors: { 'PR053-01': '베이지' } },
+  { theme: '위빙', design: '린넨 캔버스', colors: { 'PR056-01': '샌드 그레이', 'PR056-02': '민트', 'PR056-03': '스노우 크림', 'PR056-04': '라떼 베이지' } },
+  { theme: '위빙', design: '부클', colors: { 'PR057-01': '오트 크림', 'PR057-02': '그레이 울' } },
+  { theme: '위빙', design: '크로쉐', colors: { 'PR003-01': '아이보리', 'PR003-10': '딥그린' } },
+  { theme: '위빙', design: '글리터 린넨', colors: { 'PR025-01': '실키 크림' } },
+  { theme: '위빙', design: '내추럴 린넨', colors: { 'PR014-01': '화이트' } },
+  { theme: '위빙', design: '헤링본', colors: { 'PR010-01': '화이트' } },
+  { theme: '스테디', design: '회벽', colors: { 'PR002-01': '화이트', 'PR002-02': '베이지', 'PR002-03': '라이트 그레이', 'PR002-10': '퓨어화이트', 'PR002-11': '크림', 'PR002-12': '크림 화이트', 'PR002-13': '블랑 그레이' } },
+  { theme: '스테디', design: '내추럴회벽', colors: { 'PR031-01': '화이트', 'PR031-02': '크림화이트', 'PR031-03': '아이보리', 'PR031-05': '애쉬 베이지' } },
+  { theme: '스테디', design: '모던페인팅', colors: { 'PR027-01': '화이트', 'PR027-03': '아이보리', 'PR027-05': '웜 화이트' } },
+  { theme: '스테디', design: '리얼 회벽', colors: { 'PR034-01': '매트 화이트', 'PR034-02': '샌드 아이보리' } },
+  { theme: '스테디', design: '리스틱 회벽', colors: { 'PR033-01': '화이트', 'PR033-02': '내추럴 크림', 'PR033-03': '스톤 그레이' } },
+  { theme: '스테디', design: '핸디코트', colors: { 'PR018-01': '화이트', 'PR018-03': '그레이지' } },
+  { theme: '스테디', design: '프레스코', colors: { 'PR029-01': '화이트', 'PR029-02': '샌드 아이보리' } },
+  { theme: '스테디', design: '모던회벽', colors: { 'PR028-01': '화이트', 'PR028-02': '라이트그레이' } },
+  { theme: '스테디', design: '샌드페인팅', colors: { 'PR030-01': '화이트', 'PR030-02': '아이보리', 'PR030-03': '라이트 그레이' } },
+  { theme: '스테디', design: '질석', colors: { 'PR011-01': '화이트', 'PR011-07': '매트화이트' } },
+] as const;
+
+const DIAMANT_CEILING_PRODUCTS = new Set(['PR048-01', 'PR044-01', 'PR031-01', 'PR028-01']);
+
+const DIAMANT_SAMPLES: Sample[] = DIAMANT_SERIES.flatMap(({ theme, design, colors }) =>
+  Object.entries(colors).map(([productNo, color]) => ({
+    id: `diamant-${productNo.toLowerCase()}`,
+    productNo,
+    name: `디아망 ${design} ${color} ${productNo}`,
+    brand: 'LX',
+    line: design,
+    materialType: '실크',
+    collection: '디아망',
+    color,
+    pattern: design,
+    grade: '프리미엄',
+    specs: ['프리미엄 실크벽지', `${theme} 컬렉션`, design, ...(DIAMANT_CEILING_PRODUCTS.has(productNo) ? ['천장용 추천'] : [])],
+    image: '',
+    description: DIAMANT_COLLECTION_DESCRIPTION,
+    detailSections: [...DIAMANT_COMMON_DETAILS],
+    sourceLabel: 'LX Z:IN 디아망 공식 샘플북',
+  }))
+);
+
 export function ensureCatalogCollections<T>(source: T): T {
   const next: any = structuredClone(source);
   const wallpaper = next.find((category: any) => category.id === 1 || category.name === '도배');
@@ -913,6 +977,16 @@ export function ensureCatalogCollections<T>(source: T): T {
     } else {
       lxSilk.groups = [diamantFortis, ...(lxSilk.groups ?? [])];
     }
+    const diamant = {
+      name: '디아망',
+      lines: Array.from(new Set(DIAMANT_SERIES.map((series) => series.design))),
+    };
+    const existingDiamant = lxSilk.groups?.find((group: any) => group.name === diamant.name);
+    if (existingDiamant) {
+      existingDiamant.lines = Array.from(new Set([...(existingDiamant.lines ?? []), ...diamant.lines]));
+    } else {
+      lxSilk.groups = [diamant, ...(lxSilk.groups ?? [])];
+    }
   }
 
   return next;
@@ -922,7 +996,7 @@ export function sampleMatchesCatalogSelection(
   sample: Sample,
   selection: { group?: string; line?: string },
 ): boolean {
-  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드', '파사드', '리빙', '스케치', '디아망포티스'].includes(selection.group) && sample.collection !== selection.group) return false;
+  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드', '파사드', '리빙', '스케치', '디아망포티스', '디아망'].includes(selection.group) && sample.collection !== selection.group) return false;
   if (selection.line && sample.line !== selection.line) return false;
   return true;
 }
@@ -940,6 +1014,7 @@ export const MOCK_SAMPLES: Record<number, Sample[]> = {
     ...SKETCH_SAMPLES,
     ...IRIS_SAMPLES,
     ...DIAMANT_FORTIS_SAMPLES,
+    ...DIAMANT_SAMPLES,
     // --- 프리모 컬렉션 ---
     { id: '1-1', productNo: '92102-1', name: '프리모 크랙 화이트', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-1.jpg' },
     { id: '1-2', productNo: '92102-2', name: '프리모 크랙 아이보리', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-2.jpg' },
