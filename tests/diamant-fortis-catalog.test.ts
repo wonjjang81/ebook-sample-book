@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import * as sampleData from '../client/src/data/sampleData';
 
@@ -12,6 +14,7 @@ const EXPECTED_FORTIS_SERIES: Record<string, string[]> = {
   DF008: ['01', '02', '03', '04'],
   DF010: ['01'],
   DF011: ['01'],
+  DF012: ['01', '02', '03', '04', '05', '06'],
   DF013: ['01', '02', '03', '04', '05'],
   DF014: ['01', '02', '03', '04', '05'],
   DF015: ['01', '02', '03', '04'],
@@ -31,6 +34,7 @@ const EXPECTED_FORTIS_DESIGNS: Record<string, string> = {
   DF008: '스타코',
   DF010: '샌드 웨이브',
   DF011: '컬러풀 트위드',
+  DF012: '플레인 캔버스',
   DF013: '마이크로 코튼',
   DF014: '린넨',
   DF015: '심플 부클레',
@@ -40,16 +44,17 @@ const EXPECTED_FORTIS_DESIGNS: Record<string, string> = {
 };
 
 describe('LX Diamant Fortis catalog', () => {
-  it('publishes all 58 unique variants without bundled images', () => {
+  it('publishes all 64 unique variants with bundled product images', () => {
     const products = sampleData.ALL_SAMPLES.filter((sample) => sample.collection === '디아망포티스');
 
-    expect(products).toHaveLength(58);
-    expect(new Set(products.map((sample) => sample.productNo)).size).toBe(58);
-    expect(new Set(products.map((sample) => sample.id)).size).toBe(58);
+    expect(products).toHaveLength(64);
+    expect(new Set(products.map((sample) => sample.productNo)).size).toBe(64);
+    expect(new Set(products.map((sample) => sample.id)).size).toBe(64);
     expect(products.every((sample) => sample.id === `diamant-fortis-${sample.productNo.toLowerCase()}`)).toBe(true);
     expect(products.every((sample) => sample.brand === 'LX')).toBe(true);
     expect(products.every((sample) => sample.materialType === '실크')).toBe(true);
-    expect(products.every((sample) => sample.image === '')).toBe(true);
+    expect(products.every((sample) => sample.image === `/images/wallpaper/diamant-fortis/${sample.productNo}.jpg`)).toBe(true);
+    expect(products.every((sample) => existsSync(fileURLToPath(new URL(`../client/public${sample.image}`, import.meta.url))))).toBe(true);
   });
 
   it('matches the complete unique product-code set and design names in the official sample book', () => {
@@ -87,7 +92,8 @@ describe('LX Diamant Fortis catalog', () => {
     expect(fortis.lines).toContain('유러피안 플라스터');
     expect(fortis.lines).toContain('브러쉬드 페인트');
     expect(fortis.lines).toContain('소프트 니트');
-    expect(new Set(fortis.lines).size).toBe(16);
+    expect(fortis.lines).toContain('플레인 캔버스');
+    expect(new Set(fortis.lines).size).toBe(17);
   });
 
   it('scopes shared design names to Diamant Fortis', () => {
@@ -110,6 +116,6 @@ describe('LX Diamant Fortis catalog', () => {
     expect(sample.detailSections?.map((section) => section.title)).toContain('리얼 프린팅 디자인');
     expect(sample.specs).toContain('PS인증 14N 이상');
     expect(sample.sourceLabel).toBe('LX Z:IN 디아망 포티스 공식 샘플북');
-    expect(sample.image).toBe('');
+    expect(sample.image).toBe('/images/wallpaper/diamant-fortis/DF003-01.jpg');
   });
 });

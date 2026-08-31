@@ -1,17 +1,20 @@
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import * as sampleData from '../client/src/data/sampleData';
 
 describe('LX Diamant catalog', () => {
   const products = sampleData.ALL_SAMPLES.filter((sample) => sample.collection === '디아망');
 
-  it('publishes all 80 unique official products without bundled images', () => {
+  it('publishes all 80 unique official products with bundled product images', () => {
     expect(products).toHaveLength(80);
     expect(new Set(products.map((sample) => sample.productNo)).size).toBe(80);
     expect(new Set(products.map((sample) => sample.id)).size).toBe(80);
     expect(products.every((sample) => sample.id === `diamant-${sample.productNo.toLowerCase()}`)).toBe(true);
     expect(products.every((sample) => sample.brand === 'LX' && sample.materialType === '실크')).toBe(true);
     expect(products.every((sample) => sample.collection === '디아망' && sample.grade === '프리미엄')).toBe(true);
-    expect(products.every((sample) => sample.image === '')).toBe(true);
+    expect(products.every((sample) => sample.image === `/images/wallpaper/diamant/${sample.productNo}.jpg`)).toBe(true);
+    expect(products.every((sample) => existsSync(fileURLToPath(new URL(`../client/public${sample.image}`, import.meta.url))))).toBe(true);
   });
 
   it('keeps official product names, colors, and ceiling recommendations', () => {
