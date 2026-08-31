@@ -74,7 +74,11 @@ export function getStoredOrig(productId: string): string | null {
 
 /** 카드/목록에 표시할 이미지 조회 (업로드 썸네일 우선) */
 export function getProductThumb(productId: string, defaultSrc = ''): string {
-  return getStoredThumb(productId) ?? defaultSrc;
+  const storedThumb = getStoredThumb(productId);
+  if (storedThumb) return storedThumb;
+  if (!defaultSrc || !defaultSrc.startsWith('/') || defaultSrc.startsWith('//')) return defaultSrc;
+  if (defaultSrc.startsWith(import.meta.env.BASE_URL)) return defaultSrc;
+  return `${import.meta.env.BASE_URL}${defaultSrc.slice(1)}`;
 }
 
 /** 업로드된 이미지를 리사이즈 + 원본 모두 localStorage에 저장 */

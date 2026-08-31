@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { findSampleById, getCatalogLinemates, getCategoryName, ALL_SAMPLES } from '@/data/sampleData';
 import {
-  getStoredThumb, getStoredOrig,
+  getStoredThumb, getStoredOrig, getProductThumb,
   uploadProductImage, deleteProductImage
 } from '@/hooks/useProductImage';
 import { getProductColorInfo, getProductPattern, getSimilarColorSamples } from '@/lib/productMetadata';
@@ -342,7 +342,7 @@ export default function SampleDetail() {
                   </p>
                   <div className="grid grid-cols-4 gap-1.5">
                     {relatedSamples.map((s) => {
-                      const storedThumb = getStoredThumb(s.id);
+                      const relatedThumb = getProductThumb(s.id, s.image);
                       return (
                         <div
                           key={s.id}
@@ -355,9 +355,9 @@ export default function SampleDetail() {
                           )}
                           title={s.name}
                         >
-                          {(storedThumb ?? s.image) ? (
+                          {relatedThumb ? (
                             <img
-                              src={storedThumb ?? s.image}
+                              src={relatedThumb}
                               alt={s.name}
                               className="w-full h-full object-cover"
                             />
