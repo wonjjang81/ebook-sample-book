@@ -9,6 +9,19 @@ export type ConstructionManagerSelectionProduct = {
 
 export type ProductNote = { location?: string; memo?: string }
 
+export type ConstructionManagerLaunchContext = {
+  canonicalProjectId: string
+  projectName: string
+}
+
+export function parseConstructionManagerLaunchContext(search: string): ConstructionManagerLaunchContext | null {
+  const params = new URLSearchParams(search)
+  const canonicalProjectId = params.get('cmProjectId')?.trim() ?? ''
+  const projectName = params.get('cmProjectName')?.trim() ?? ''
+  if (!canonicalProjectId || !projectName) return null
+  return { canonicalProjectId, projectName }
+}
+
 export function buildConstructionManagerSelection(
   projectName: string,
   products: ConstructionManagerSelectionProduct[],

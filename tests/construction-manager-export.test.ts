@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildConstructionManagerSelection } from '../client/src/lib/constructionManagerExport'
+import { buildConstructionManagerSelection, parseConstructionManagerLaunchContext } from '../client/src/lib/constructionManagerExport'
 
 describe('construction manager selection export', () => {
   it('exports selected samples using samplebook-selection/v1', () => {
@@ -16,5 +16,13 @@ describe('construction manager selection export', () => {
   it('requires a project and at least one selected product', () => {
     expect(() => buildConstructionManagerSelection('', [], {})).toThrow('프로젝트')
     expect(() => buildConstructionManagerSelection('현장', [], {})).toThrow('선택한 제품')
+  })
+
+  it('accepts a construction manager launch context only when id and name are both present', () => {
+    expect(parseConstructionManagerLaunchContext('?cmProjectId= cm-1 &cmProjectName=%EB%B3%91%EC%A0%90_%ED%9A%A8%EC%84%B1%ED%95%B4%EB%A7%81%ED%84%B4')).toEqual({
+      canonicalProjectId: 'cm-1',
+      projectName: '병점_효성해링턴',
+    })
+    expect(parseConstructionManagerLaunchContext('?cmProjectName=현장')).toBeNull()
   })
 })
