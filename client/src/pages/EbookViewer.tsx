@@ -21,6 +21,7 @@ import html2canvas from 'html2canvas';
 import { ensureCatalogCollections, getCatalogSamples, getManagedCategories, sampleMatchesCatalogSelection, saveCatalogSample, deleteCatalogSample, type EditableSample } from '@/data/sampleData';
 import { getProductThumb } from '@/hooks/useProductImage';
 import { PRODUCT_COLOR_FAMILIES, getProductColorInfo, getProductPattern, matchesMaterialGrade, type MaterialGradeFilter } from '@/lib/productMetadata';
+import { buildConstructionManagerSelection } from '@/lib/constructionManagerExport';
 
 // Mock 데이터 - 5단계 계층 구조 (카테고리 > 브랜드 > 소재유형 > 제품군 > 라인)
 const CATEGORIES = [
@@ -825,6 +826,31 @@ export default function EbookViewer() {
       alert('PDF 내보내기 중 오류가 발생했습니다.');
     }
   };
+
+  const exportToConstructionManager = () => {
+    try {
+      const products = getSelectedProductDetails().map(sample => ({
+        id: sample.id,
+        productNo: sample.productNo,
+        name: sample.name,
+        brand: sample.brand,
+        category: CATEGORIES.find(category => category.id === sample.categoryId)?.name
+          ?? CATEGORIES.find(category => category.brands.some(brand => brand.name === sample.brand))?.name
+          ?? '기타',
+        specs: sample.specs ?? [],
+      }));
+      const payload = buildConstructionManagerSelection(currentProject, products, productNotes);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' }));
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${currentProject.replace(/[\\/:*?"<>|]/g, '_')}_건설매니저_선택품.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '건설매니저 연계 파일을 만들지 못했습니다.');
+    }
+  };
+
   const handleCategoryClick = (id: number) => {
     if (selectedCategory === id) {
       // 같은 카테고리 재클릭 시 펼침/접힘 토글만
@@ -1360,10 +1386,16 @@ export default function EbookViewer() {
                       미리보기
                     </Button>
                   </div>
-                  <Button onClick={exportToPDF} className="gap-2">
-                    <Download className="w-4 h-4" />
-                    PDF 내보내기
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={exportToConstructionManager} variant="outline" className="gap-2">
+                      <Upload className="w-4 h-4" />
+                      건설매니저용 JSON
+                    </Button>
+                    <Button onClick={exportToPDF} className="gap-2">
+                      <Download className="w-4 h-4" />
+                      PDF 내보내기
+                    </Button>
+                  </div>
                 </div>
                 {/* 정렬 버튼 */}
                 <div className="mt-3">
