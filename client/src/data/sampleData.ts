@@ -1,3 +1,5 @@
+import { BEST_WALLPAPER_PRODUCTS } from './bestWallpaperData';
+
 // 공유 데이터 파일 - EbookViewer와 SampleDetail에서 함께 사용
 
 // 4단계 계층 구조 (카테고리 > 브랜드 > 제품군 > 라인)
@@ -882,6 +884,28 @@ const DIAMANT_SAMPLES: Sample[] = DIAMANT_SERIES.flatMap(({ theme, design, color
   }))
 );
 
+const BEST_WALLPAPER_SAMPLES: Sample[] = BEST_WALLPAPER_PRODUCTS.map(({ productNo, design, color, theme, sourceUrl }) => ({
+  id: `best-${productNo.toLowerCase()}`,
+  productNo,
+  name: `베스트 ${design}${color ? ` ${color}` : ''} ${productNo}`,
+  brand: 'LX',
+  categoryId: 1,
+  materialType: '실크',
+  collection: '베스트',
+  line: design,
+  pattern: design,
+  color: color || undefined,
+  specs: ['실크벽지', theme, design, ...(theme === '천장지' ? ['천장용 추천'] : [])],
+  image: '',
+  description: 'LX Z:IN 실크벽지 베스트는 딥·카밍·에센셜·소프트 텍스처와 천장지로 구성된 벽지 컬렉션입니다. 공식 샘플북의 제품명과 색상으로 자재를 비교할 수 있습니다.',
+  detailSections: [
+    { title: '텍스처 분류', description: `${theme} · ${design}` },
+    { title: '색상 정보', description: color || '공식 샘플북에 별도 색상명이 표기되지 않은 제품입니다.' },
+    { title: '공식 제품 정보', description: `공식 샘플북: ${sourceUrl}\n페이지 제목은 베스띠, 본문 컬렉션은 베스트로 표기됩니다. 화면과 조명에 따라 실제 색상은 다르게 보일 수 있으므로 시공 전 실물 샘플을 확인하세요.` },
+  ],
+  sourceLabel: 'LX Z:IN 베스트(베스띠) 공식 샘플북',
+}));
+
 export function ensureCatalogCollections<T>(source: T): T {
   const next: any = structuredClone(source);
   const wallpaper = next.find((category: any) => category.id === 1 || category.name === '도배');
@@ -978,6 +1002,10 @@ export function ensureCatalogCollections<T>(source: T): T {
     } else {
       lxSilk.groups = [diamantFortis, ...(lxSilk.groups ?? [])];
     }
+    const best = { name: '베스트', lines: Array.from(new Set(BEST_WALLPAPER_PRODUCTS.map((product) => product.design))) };
+    const existingBest = lxSilk.groups?.find((group: any) => group.name === best.name);
+    if (existingBest) existingBest.lines = Array.from(new Set([...(existingBest.lines ?? []), ...best.lines]));
+    else lxSilk.groups = [...(lxSilk.groups ?? []), best];
     const diamant = {
       name: '디아망',
       lines: Array.from(new Set(DIAMANT_SERIES.map((series) => series.design))),
@@ -997,7 +1025,7 @@ export function sampleMatchesCatalogSelection(
   sample: Sample,
   selection: { group?: string; line?: string },
 ): boolean {
-  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드', '파사드', '리빙', '스케치', '디아망포티스', '디아망'].includes(selection.group) && sample.collection !== selection.group) return false;
+  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드', '파사드', '리빙', '스케치', '디아망포티스', '디아망', '베스트'].includes(selection.group) && sample.collection !== selection.group) return false;
   if (selection.line && sample.line !== selection.line) return false;
   return true;
 }
@@ -1016,6 +1044,7 @@ export const MOCK_SAMPLES: Record<number, Sample[]> = {
     ...IRIS_SAMPLES,
     ...DIAMANT_FORTIS_SAMPLES,
     ...DIAMANT_SAMPLES,
+    ...BEST_WALLPAPER_SAMPLES,
     // --- 프리모 컬렉션 ---
     { id: '1-1', productNo: '92102-1', name: '프리모 크랙 화이트', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-1.jpg' },
     { id: '1-2', productNo: '92102-2', name: '프리모 크랙 아이보리', brand: '개나리', line: '프리모', specs: ['부직포', '방염', '크랙 텍스처'], image: '/images/wallpaper/92102-2.jpg' },

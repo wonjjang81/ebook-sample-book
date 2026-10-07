@@ -9,6 +9,8 @@ import SampleDetail from "./pages/SampleDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import Settings from "./pages/Settings";
 import PhotoMaterialFinder from "./pages/PhotoMaterialFinder";
+import Showroom from "./pages/Showroom";
+import { ProductImagesProvider } from "./hooks/useProductImage";
 
 
 function AppRouter() {
@@ -19,6 +21,7 @@ function AppRouter() {
       <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/settings"} component={Settings} />
       <Route path={"/photo-search"} component={PhotoMaterialFinder} />
+      <Route path={"/showroom"} component={Showroom} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -40,10 +43,12 @@ function App() {
         // switchable
       >
         <TooltipProvider>
-          <Toaster />
-          <WouterRouter base={routerBase}>
-            <AppRouter />
-          </WouterRouter>
+          <ProductImagesProvider>
+            <Toaster />
+            <WouterRouter base={routerBase}>
+              <AppRouter />
+            </WouterRouter>
+          </ProductImagesProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

@@ -1,6 +1,6 @@
 import { ReactNode, useState, createContext, useContext } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SidebarContextType {
@@ -25,9 +25,11 @@ interface LayoutProps {
 
 export function MainLayout({ children, sidebar }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(() => {
-    // localStorage에서 사이드바 상태 복원
-    const saved = localStorage.getItem('sidebarOpen');
-    return saved !== null ? JSON.parse(saved) : true;
+    if (window.matchMedia('(max-width: 767px)').matches) return false;
+    try {
+      const saved = localStorage.getItem('sidebarOpen');
+      return saved === null ? true : JSON.parse(saved) === true;
+    } catch { return true; }
   });
 
   // 사이드바 상태 변경 시 localStorage에 저장
@@ -46,8 +48,8 @@ export function MainLayout({ children, sidebar }: LayoutProps) {
         {sidebar && (
           <aside
             className={cn(
-              'bg-sidebar text-sidebar-foreground transition-all duration-300 overflow-hidden flex flex-col',
-              sidebarOpen ? 'fixed inset-y-0 left-0 z-40 w-64 md:relative md:flex-shrink-0' : 'w-20 flex-shrink-0'
+              'bg-sidebar border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 overflow-hidden flex-col',
+              sidebarOpen ? 'flex fixed inset-y-0 left-0 z-40 w-64 md:relative md:flex-shrink-0' : 'hidden md:flex w-20 flex-shrink-0'
             )}
           >
             {/* Sidebar Header with Toggle */}
@@ -57,7 +59,7 @@ export function MainLayout({ children, sidebar }: LayoutProps) {
             )}>
               {sidebarOpen && (
                 <h1 className="text-lg font-bold text-sidebar-foreground truncate">
-                  자재 샘플북
+                  자재 E-샘플북<span className="mt-1 block text-[9px] font-medium tracking-[0.2em] text-muted-foreground">MATERIAL ATELIER</span>
                 </h1>
               )}
               <Button
@@ -66,6 +68,8 @@ export function MainLayout({ children, sidebar }: LayoutProps) {
                 onClick={handleToggleSidebar}
                 className={cn('p-0 flex-shrink-0', sidebarOpen ? 'h-8 w-8' : 'h-10 w-10')}
                 title={sidebarOpen ? '메뉴 닫기' : '메뉴 열기'}
+                aria-label={sidebarOpen ? '메뉴 닫기' : '메뉴 열기'}
+                aria-expanded={sidebarOpen}
               >
                 {sidebarOpen ? (
                   <ChevronLeft className="w-4 h-4" />
@@ -92,6 +96,7 @@ export function MainLayout({ children, sidebar }: LayoutProps) {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-auto min-w-0 md:min-w-0">
+          {sidebar && <div className="flex items-center gap-3 border-b bg-card px-4 py-2 md:hidden"><Button variant="ghost" size="icon" aria-label="카테고리 메뉴 열기" onClick={() => setSidebarOpen(true)}><Menu className="h-5 w-5" /></Button><span className="text-sm font-semibold">자재 E-샘플북</span></div>}
           {/* Content */}
           <div className="flex-1 overflow-auto">
             {children}
@@ -108,13 +113,18 @@ export function SidebarContent({ children, className }: { children: ReactNode; c
   return (
     <div
       className={cn(
-        'flex flex-col h-full gap-6 transition-all duration-300',
-        sidebarOpen ? 'p-6' : 'p-2'
+        'flex flex-col h-full gap-4 transition-all duration-300',
+        sidebarOpen ? 'p-4' : 'p-2', className
       )}
     >
       {children}
     </div>
   );
+}
+
+export function SidebarLabel({ children }: { children: ReactNode }) {
+  const { sidebarOpen } = useSidebar();
+  return sidebarOpen ? <span>{children}</span> : null;
 }
 
 export function SidebarHeader({ children, className }: { children: ReactNode; className?: string }) {

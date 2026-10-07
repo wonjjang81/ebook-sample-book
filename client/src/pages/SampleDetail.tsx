@@ -11,9 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { findSampleById, getCatalogLinemates, getCategoryName, ALL_SAMPLES } from '@/data/sampleData';
 import {
-  getStoredThumb, getStoredOrig, getProductThumb,
+  getStoredThumb, getStoredOrig, getProductThumb, getProductOrig, useProductImages,
   uploadProductImage, deleteProductImage
 } from '@/hooks/useProductImage';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { PatternImagePreview } from '@/components/PatternImagePreview';
 import { getProductColorInfo, getProductPattern, getSimilarColorSamples } from '@/lib/productMetadata';
 
 export default function SampleDetail() {
@@ -33,15 +35,17 @@ export default function SampleDetail() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { images, refresh: refreshProductImages } = useProductImages();
+  const auth = useAdminAuth();
 
   const sample = findSampleById(sampleId);
 
   // 페이지 로드 시 저장된 이미지 불러오기
   useEffect(() => {
     if (!sampleId) return;
-    setThumbSrc(getStoredThumb(sampleId));
-    setOrigSrc(getStoredOrig(sampleId));
-  }, [sampleId]);
+    setThumbSrc(images[sampleId]?.thumbUrl ?? getStoredThumb(sampleId));
+    setOrigSrc(images[sampleId]?.originalUrl ?? getStoredOrig(sampleId));
+  }, [sampleId, images]);
 
   // 같은 라인의 인접 제품 (이전/다음 탐색)
   const linemates = sample
@@ -59,11 +63,15 @@ export default function SampleDetail() {
   const handleGoBack = () => navigate('/');
 
   // 실제 표시할 이미지 소스
-  const displayThumb = thumbSrc ?? sample?.image ?? '';
-  const displayOrig  = origSrc  ?? sample?.image ?? '';
+  const displayThumb = thumbSrc ?? (sample ? getProductThumb(sampleId, sample.image) : '');
+  const displayOrig  = origSrc ?? (sample ? getProductOrig(sampleId, sample.image) : '');
 
   // 파일 처리 공통 함수
   const handleFile = async (file: File) => {
+    if (!auth.isAdmin) {
+      setUploadError('관리자 로그인 후 이미지를 변경할 수 있습니다.');
+      return;
+    }
     if (!file.type.startsWith('image/')) {
       setUploadError('이미지 파일만 업로드할 수 있습니다.');
       return;
@@ -75,11 +83,12 @@ export default function SampleDetail() {
     setUploadError(null);
     setIsUploading(true);
     try {
-      const { thumb, orig } = await uploadProductImage(sampleId, file);
-      setThumbSrc(thumb);
-      setOrigSrc(orig);
-    } catch (e) {
-      setUploadError('이미지 저장 중 오류가 발생했습니다.');
+      const image = await uploadProductImage(sampleId, file);
+      setThumbSrc(image.thumbUrl);
+      setOrigSrc(image.originalUrl);
+      await refreshProductImages();
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : '이미지 저장 중 오류가 발생했습니다.');
     } finally {
       setIsUploading(false);
     }
@@ -94,14 +103,25 @@ export default function SampleDetail() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
+    if (!auth.isAdmin) return;
     const file = e.dataTransfer.files?.[0];
     if (file) handleFile(file);
   };
 
-  const handleDeleteImage = () => {
-    deleteProductImage(sampleId);
-    setThumbSrc(null);
-    setOrigSrc(null);
+  const handleDeleteImage = async () => {
+    if (!auth.isAdmin) return;
+    setIsUploading(true);
+    setUploadError(null);
+    try {
+      await deleteProductImage(sampleId);
+      setThumbSrc(null);
+      setOrigSrc(null);
+      await refreshProductImages();
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : '이미지를 삭제하지 못했습니다.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   if (!sample) {
@@ -119,7 +139,7 @@ export default function SampleDetail() {
   }
 
   const categoryName = getCategoryName(sample.categoryId ?? 1);
-  const hasCustomImage = !!thumbSrc;
+  const hasCustomImage = Boolean(images[sampleId] || getStoredThumb(sampleId));
   const colorInfo = getProductColorInfo(sample);
   const pattern = getProductPattern(sample);
 
@@ -170,7 +190,7 @@ export default function SampleDetail() {
 
       {/* Content */}
       <div className="container py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Left: Image */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-3">
@@ -183,7 +203,7 @@ export default function SampleDetail() {
                   isUploading ? 'cursor-wait' : displayThumb ? 'cursor-zoom-in' : 'cursor-pointer'
                 )}
                 onClick={() => !isUploading && displayThumb && setIsImageExpanded(true)}
-                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragOver={(e) => { e.preventDefault(); if (auth.isAdmin) setIsDragOver(true); }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleDrop}
               >
@@ -242,21 +262,20 @@ export default function SampleDetail() {
                 <p className="text-xs text-red-500 text-center">{uploadError}</p>
               )}
 
-              {/* 이미지 업로드 버튼 영역 */}
-              <div className="grid grid-cols-2 gap-2">
-                {/* 이미지 교체 버튼 */}
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="gap-1.5 w-full"
-                  disabled={isUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  {hasCustomImage ? '이미지 교체' : '이미지 업로드'}
-                </Button>
+              <div className={cn('grid gap-2', auth.isAdmin ? 'grid-cols-2' : 'grid-cols-1')}>
+                {auth.isAdmin && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="gap-1.5 w-full"
+                    disabled={isUploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    {hasCustomImage ? '이미지 교체' : '이미지 업로드'}
+                  </Button>
+                )}
 
-                {/* 다운로드 버튼 */}
                 {displayOrig ? (
                   <a href={displayOrig} download={`${sample.productNo}.jpg`} className="w-full">
                     <Button variant="outline" size="sm" className="gap-1.5 w-full">
@@ -273,7 +292,7 @@ export default function SampleDetail() {
               </div>
 
               {/* 기본 이미지로 복원 버튼 (업로드된 이미지가 있을 때만) */}
-              {hasCustomImage && (
+              {auth.isAdmin && hasCustomImage && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -285,20 +304,32 @@ export default function SampleDetail() {
                 </Button>
               )}
 
-              {/* 안내 텍스트 */}
-              <p className="text-xs text-muted-foreground text-center leading-relaxed">
-                이미지를 드래그&드롭하거나 버튼을 클릭하여 교체할 수 있습니다.<br />
-                카드용 이미지는 자동으로 400×400으로 조정됩니다.
-              </p>
+              {auth.isLoading ? (
+                <p className="text-xs text-muted-foreground text-center">관리자 상태 확인 중...</p>
+              ) : auth.isAdmin ? (
+                <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-center text-xs text-blue-800">
+                  <p className="font-medium">관리자 · {auth.user?.email}</p>
+                  <p className="mt-1">이미지를 놓거나 버튼을 눌러 서버에 저장할 수 있습니다.</p>
+                  <button type="button" className="mt-1 underline" onClick={() => void auth.signOut()}>로그아웃</button>
+                </div>
+              ) : (
+                <div className="rounded-lg border bg-muted/40 px-3 py-3 text-center">
+                  <p className="text-xs text-muted-foreground">이미지 등록과 삭제는 관리자만 가능합니다.</p>
+                  <Button type="button" variant="outline" size="sm" className="mt-2" onClick={auth.signIn}>Google 관리자 로그인</Button>
+                  {auth.error && <p className="mt-2 text-xs text-red-500">{auth.error}</p>}
+                </div>
+              )}
 
               {/* 숨겨진 파일 입력 */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
+              {auth.isAdmin && (
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              )}
 
               {/* 같은 라인 이전/다음 탐색 */}
               {linemates.length > 1 && (
@@ -374,21 +405,17 @@ export default function SampleDetail() {
           </div>
 
           {/* Right: Details */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 min-w-0">
             <div>
               <div className="flex flex-wrap gap-2 mb-3">
                 <Badge>{categoryName}</Badge>
                 <Badge variant="secondary">{sample.brand}</Badge>
                 {sample.collection && <Badge variant="outline">{sample.collection}</Badge>}
                 <Badge variant="outline">{sample.line}</Badge>
-                {sample.specs.map((spec) => (
-                  <Badge key={spec} variant="outline" className="text-xs bg-gray-50">
-                    {spec}
-                  </Badge>
-                ))}
               </div>
               <h1 className="text-3xl font-bold text-foreground mb-1">{sample.name}</h1>
               <p className="text-base text-muted-foreground font-mono">{sample.productNo}</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{sample.specs.join(' · ')}</p>
             </div>
 
             <Tabs defaultValue="specs" className="w-full">
@@ -511,18 +538,7 @@ export default function SampleDetail() {
             className="relative flex items-center justify-center"
             style={{ maxWidth: '95vw', maxHeight: '95vh' }}
           >
-            <img
-              src={displayOrig}
-              alt={sample.name}
-              className="rounded-lg shadow-2xl"
-              style={{
-                maxWidth: '95vw',
-                maxHeight: '90vh',
-                objectFit: 'contain',
-                /* 원본 해상도 유지: width/height를 강제하지 않음 */
-              }}
-              onClick={(e) => e.stopPropagation()}
-            />
+            <PatternImagePreview src={displayOrig} alt={sample.name} />
             {/* 닫기 버튼 */}
             <button
               onClick={() => setIsImageExpanded(false)}
@@ -531,16 +547,8 @@ export default function SampleDetail() {
               <X className="w-5 h-5" />
             </button>
             {/* 하단 정보 */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 text-white text-sm px-4 py-1.5 rounded-full">
-              <span>{sample.name}</span>
-              <span className="text-white/50">·</span>
-              <span className="font-mono">{sample.productNo}</span>
-              {hasCustomImage && (
-                <>
-                  <span className="text-white/50">·</span>
-                  <span className="text-blue-300 text-xs">사용자 업로드 이미지 (원본)</span>
-                </>
-              )}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 max-w-[calc(100%-1.5rem)] truncate whitespace-nowrap rounded bg-black/60 px-2 py-1 text-xs font-mono text-white" title={sample.productNo}>
+              {sample.productNo}
             </div>
           </div>
         </div>

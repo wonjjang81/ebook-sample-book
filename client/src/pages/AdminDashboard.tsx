@@ -8,18 +8,21 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Plus, Upload, Edit2, Trash2, Eye, Search, FolderTree, Package, CheckCircle2, FileClock, ArrowUp, ArrowDown, EyeOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import AdminShowroomPhotos from '@/pages/AdminShowroomPhotos';
 import { deleteCatalogSample, exportCatalogBundle, getCatalogSamples, getManagedCategories, importCatalogBundle, saveCatalogSample, saveManagedCategories, type EditableSample, type ManagedCategory } from '@/data/sampleData';
+import AdminImageImport from '@/pages/AdminImageImport';
 
 const ADMIN_MENU = [
   { id: 'samples', label: '샘플 관리' },
+  { id: 'images', label: '이미지 일괄 업로드' },
   { id: 'categories', label: '카테고리 관리' },
-  { id: 'upload', label: 'PDF 업로드' },
+  { id: 'showroom', label: '쇼룸 사진' },
   { id: 'settings', label: '설정' },
 ];
 
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
-  const [activeMenu, setActiveMenu] = useState('samples');
+  const [activeMenu, setActiveMenu] = useState(() => new URLSearchParams(window.location.search).get('tab') === 'showroom' ? 'showroom' : 'samples');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [categories, setCategories] = useState<ManagedCategory[]>(() => getManagedCategories());
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
@@ -172,7 +175,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 bg-slate-50/70 p-4 md:p-8">
+        <div className="flex-1 bg-background p-4 md:p-8">
+          {(activeMenu === 'samples' || activeMenu === 'categories') && <p className="mb-4 rounded-lg border bg-card p-3 text-sm text-muted-foreground">샘플·카테고리 편집 내용은 현재 브라우저에 저장됩니다. 서버 이미지 업로드와는 별도로 관리됩니다.</p>}
           {/* Samples Management */}
           {activeMenu === 'samples' && (
             <div className="mx-auto max-w-7xl space-y-6">
@@ -288,6 +292,10 @@ export default function AdminDashboard() {
               </Card>
             </div>
           )}
+
+          {activeMenu === 'images' && <AdminImageImport />}
+
+          {activeMenu === 'showroom' && <AdminShowroomPhotos />}
 
           <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
             <DialogContent className="max-w-2xl">

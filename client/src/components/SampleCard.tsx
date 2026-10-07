@@ -1,8 +1,8 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Pencil } from 'lucide-react';
-import { getProductThumb } from '@/hooks/useProductImage';
+import { getProductThumb, useProductImages } from '@/hooks/useProductImage';
+import { useState } from 'react';
 
 interface SampleCardProps {
   sample: {
@@ -33,39 +33,50 @@ export function SampleCard({
   onEdit,
   className,
 }: SampleCardProps) {
+  useProductImages();
   const imageSrc = getProductThumb(sample.id, sample.image);
+  const [loadedImage, setLoadedImage] = useState<string | null>(null);
 
   return (
     <Card
       onClick={onClick}
+      tabIndex={onClick ? 0 : undefined}
+      role={onClick ? 'link' : undefined}
+      aria-label={onClick ? `${sample.name} 상세 보기` : undefined}
+      onKeyDown={(event) => { if (event.target === event.currentTarget && event.key === 'Enter') onClick?.(); }}
       className={cn(
-        'overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105',
+        'gap-0 py-0 overflow-hidden cursor-pointer transition-shadow duration-200 hover:shadow-md focus-visible:outline-2 focus-visible:outline-ring',
         className
       )}
     >
       {/* Image Container */}
       <div className="relative w-full aspect-square bg-muted overflow-hidden">
         {imageSrc ? (
+          <div className="w-full h-full" style={loadedImage === imageSrc ? {
+            backgroundImage: `url(${JSON.stringify(imageSrc)})`,
+            backgroundRepeat: 'repeat',
+            backgroundPosition: 'center',
+            backgroundSize: 'auto',
+          } : undefined}>
           <img
             src={imageSrc}
             alt={sample.name}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-cover"
+            onLoad={() => setLoadedImage(imageSrc)}
+            className="w-full h-full object-none opacity-0"
           />
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
             <span className="text-sm">이미지 없음</span>
           </div>
         )}
-        <Badge className="absolute top-3 right-3 bg-primary text-primary-foreground">
-          {sample.brand}
-        </Badge>
 
         {/* Selection/Like Buttons */}
-        <div className="absolute bottom-3 right-3 flex gap-1">
+        <div className="absolute bottom-2 right-2 flex gap-1">
           {onEdit && (
-            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="w-8 h-8 rounded bg-slate-900/80 text-white flex items-center justify-center hover:bg-slate-900" title="샘플 편집" aria-label={`${sample.name} 편집`}><Pencil className="w-4 h-4" /></button>
+            <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="w-11 h-11 rounded-lg bg-slate-900/80 text-white flex items-center justify-center hover:bg-slate-900" title="샘플 편집" aria-label={`${sample.name} 편집`}><Pencil className="w-4 h-4" /></button>
           )}
           {onSelect && (
             <button
@@ -74,9 +85,9 @@ export function SampleCard({
                 onSelect();
               }}
               className={cn(
-                'w-8 h-8 rounded flex items-center justify-center transition-all',
+                'w-11 h-11 rounded-lg flex items-center justify-center transition-colors',
                 isSelected
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-white text-gray-700 hover:bg-blue-50'
               )}
               title="선택"
@@ -93,7 +104,7 @@ export function SampleCard({
                 onLike();
               }}
               className={cn(
-                'w-8 h-8 rounded flex items-center justify-center transition-all',
+                'w-11 h-11 rounded-lg flex items-center justify-center transition-colors',
                 isLiked
                   ? 'bg-red-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-red-50'
@@ -109,34 +120,19 @@ export function SampleCard({
       </div>
 
       {/* Content */}
-      <CardHeader className="pb-3">
+      <CardHeader className="p-4">
         <div className="space-y-2">
+          <p className="text-xs text-muted-foreground truncate">{sample.brand} · {sample.line}</p>
           <div className="font-mono text-xs text-muted-foreground tracking-wider">
             {sample.productNo}
           </div>
-          <h3 className="font-semibold text-foreground line-clamp-2 text-sm">
+          <h3 className="font-semibold text-foreground truncate text-sm" title={sample.name}>
             {sample.name}
           </h3>
         </div>
       </CardHeader>
 
       {/* Specs */}
-      {sample.specs.length > 0 && (
-        <CardContent>
-          <div className="space-y-1">
-            {sample.specs.slice(0, 2).map((spec, idx) => (
-              <p key={idx} className="text-xs text-muted-foreground line-clamp-1">
-                • {spec}
-              </p>
-            ))}
-            {sample.specs.length > 2 && (
-              <p className="text-xs text-muted-foreground">
-                +{sample.specs.length - 2}개 더보기
-              </p>
-            )}
-          </div>
-        </CardContent>
-      )}
     </Card>
   );
 }

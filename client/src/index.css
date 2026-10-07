@@ -43,38 +43,38 @@
 }
 
 :root {
-  --primary: oklch(0.35 0.15 255);
+  --primary: #183f58;
   --primary-foreground: oklch(0.98 0.001 286.375);
-  --sidebar-primary: oklch(0.35 0.15 255);
+  --sidebar-primary: #183f58;
   --sidebar-primary-foreground: oklch(0.98 0.001 286.375);
   --chart-1: oklch(0.45 0.12 255);
   --chart-2: oklch(0.55 0.14 255);
   --chart-3: oklch(0.35 0.15 255);
   --chart-4: oklch(0.25 0.12 255);
   --chart-5: oklch(0.15 0.1 255);
-  --radius: 0.5rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.15 0.02 255);
+  --radius: 0.75rem;
+  --background: #f6f5f1;
+  --foreground: #18272c;
   --card: oklch(0.995 0 0);
   --card-foreground: oklch(0.15 0.02 255);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.15 0.02 255);
-  --secondary: oklch(0.92 0.01 255);
+  --secondary: #eaf0f2;
   --secondary-foreground: oklch(0.35 0.15 255);
-  --muted: oklch(0.88 0.008 255);
-  --muted-foreground: oklch(0.55 0.05 255);
-  --accent: oklch(0.88 0.008 255);
+  --muted: #eeefea;
+  --muted-foreground: #5f6c70;
+  --accent: #eaf0f2;
   --accent-foreground: oklch(0.35 0.15 255);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.9 0.005 255);
-  --input: oklch(0.95 0.003 255);
-  --ring: oklch(0.35 0.15 255);
-  --sidebar: oklch(0.35 0.15 255);
-  --sidebar-foreground: oklch(0.98 0.001 286.375);
-  --sidebar-accent: oklch(0.45 0.12 255);
-  --sidebar-accent-foreground: oklch(0.98 0.001 286.375);
-  --sidebar-border: oklch(0.4 0.1 255);
+  --border: #e1e4e0;
+  --input: #e1e4e0;
+  --ring: #183f58;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #18272c;
+  --sidebar-accent: #eaf0f2;
+  --sidebar-accent-foreground: #183f58;
+  --sidebar-border: #e1e4e0;
   --sidebar-ring: oklch(0.35 0.15 255);
 }
 
@@ -119,18 +119,18 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
   }
   h1, h2, h3 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
     font-weight: 700;
   }
   h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
     font-weight: 600;
   }
   code, pre {
-    font-family: 'Roboto Mono', monospace;
+    font-family: Consolas, 'Courier New', monospace;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
