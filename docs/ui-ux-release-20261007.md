@@ -1,6 +1,6 @@
 # UI/UX 릴리스 및 격리 Preview 배포 기록
 
-2026-10-07 기준. 운영 전환 전 검증 기록이며 운영 배포 완료 보고서가 아니다.
+2026-10-07 기준. 초기 Preview 검증 기록과 아래의 정식 운영 배포 완료 기록을 함께 보존한다.
 
 ## 소스와 배포
 
@@ -69,3 +69,16 @@ Preview 이미지 조회는 운영의 공개 이미지 API에만 읽기 전용�
 - 실제 브라우저에서 스케치 15053-1 카드 이미지 표시 확인. 캡처: `design-review-20261007/preview-server-images.png` (상위 작업공간).
 - Cloudflare의 동일 영역 Worker 공개 호출에 필요한 `global_fetch_strictly_public` 호환성 설정을 Preview에만 적용했다. 근거: https://developers.cloudflare.com/workers/observability/errors/ 및 https://developers.cloudflare.com/workers/runtime-apis/fetch/
 - 운영 Worker, DB, R2 객체, 관리자 로그인 설정은 변경하지 않았다. 정식 운영 배포는 격리 로그인 검증 후 진행한다.
+
+## 정식 운영 배포 완료
+
+- 소스 커밋: `d77b2e1` (이후 문서 전용 커밋은 실행 코드에 영향 없음).
+- 운영 주소: https://ebook-sample-book.tubebluemoon.workers.dev/
+- 배포 버전: `73af9b35-8443-4d46-a661-6a393517f288`.
+- 명령: `wrangler deploy --config wrangler.jsonc --keep-vars`. 기존 운영 DB/R2 바인딩, 운영 OAuth Secret 및 변수를 보존했다. 운영 DB 마이그레이션이나 R2 객체 변경은 실행하지 않았다.
+- 실제 운영 Google 로그인 성공, 서버 인증을 재조회하는 상세 화면의 관리자 이메일 확인. 로그아웃 후 재조회 확인. 다른 브라우저 세션을 임의로 제거하지 않았다.
+- 미인증 관리자 사용량 API 401, 교차 출처 로그아웃 요청 403, 공개 이미지 목록 962건 및 기존 썸네일 200.
+- 배포된 HTML이 검증한 `index-D8xfdsy_.js`를 참조함을 확인했다.
+- 운영 사용자/멤버십 1/1, 이미지/버전 962/962 유지. 별도 비관리자 Google 계정 로그인 검증은 수행하지 않았다(위 운영 권한 모델 참조).
+- 운영 관리자 확인 캡처: 상위 작업공간 `design-review-20261007/production-admin-verified.png`.
+- 필요 시 기존 버전 `12c6400b-aa7a-44b1-b305-f7f576ddcaf4`로 Worker 복귀 가능. 복구 백업은 비공개 로컬 경로에 유지한다.
