@@ -1,6 +1,6 @@
 # 원본 크기 반복 표시와 경계 보정
 
-2026-10-07. 로컬 개발 및 검증 완료, 이 변경은 아직 운영 배포하지 않았다.
+2026-10-07. 로컬 검증 후 사용자 승인으로 운영 배포 완료.
 
 - 공통 MaterialPatternImage로 상세 메인, 제품계열·유사색상, 목록 카드, 선택·찜, 사진 분석 추천, 쇼룸 자재 선택/레이어 미리보기를 통일했다.
 - 서버 원본 → 로컬 원본 → 기존 로컬 썸네일 → 기본 이미지 순서. CSS background-size:auto와 repeat로 원본 픽셀 크기를 유지한다. hover/선택 확대 효과는 제거했다.
@@ -10,3 +10,13 @@
 - 타입 검사, 25개 파일/92개 테스트, Vite production 빌드 통과. 기존 대형 청크 경고는 유지.
 - 실제 로컬 브라우저에서 PR043-03 원본 500×500, repeat/auto, PNG 표시용 경계 보정 사본 확인. 상세 화면 캡처는 상위 작업공간 design-review-20261007/native-pattern-corrected.png.
 - 원본 버퍼/중앙 픽셀 보존, 반대쪽 경계와 모서리 일치, 작은 이미지 처리, 서버 원본 우선/로컬 업로드 호환을 테스트했다.
+
+## 운영 배포
+
+- 구현 커밋: d225a1c.
+- Worker 버전: 500778c8-250b-4415-98ad-5c1871ffd8c4.
+- 운영 설정으로 `wrangler deploy --config wrangler.jsonc --keep-vars` 실행. DB/R2 바인딩 및 기존 비밀키 보존. DB 마이그레이션과 이미지 파일 변경 없음.
+- 원격 검증: 새 index-CK39Tsj_.js 참조 확인, 공개 이미지 962건 조회 200, 미인증 관리자 API 401, 교차 출처 변경 403.
+- 실제 운영 wide-paper-39391-2 상세 페이지: original URL, 원본 409×235, background repeat/auto 및 표시용 PNG 경계 보정 확인.
+- 운영 캡처: 상위 작업공간 design-review-20261007/production-native-pattern.png.
+- 복귀 기준: 이전 Worker 버전 73af9b35-8443-4d46-a661-6a393517f288.
