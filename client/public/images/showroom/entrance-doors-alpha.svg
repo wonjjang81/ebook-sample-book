@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="715" height="519" viewBox="0 0 715 519">
+  <defs><mask id="cabinet" maskUnits="userSpaceOnUse"><rect width="715" height="519" fill="black"/>
+    <!-- Top and side surround molding, four door fronts. Door seams remain untouched. -->
+    <path fill="white" d="M155 23L487 42V56L165 39V457L154 460Z M490 44L514 46V433L491 435Z M166 43L248 47V447L165 452Z M251 48L329 52V441L251 447Z M332 52L405 56V437L332 442Z M410 57L481 61V432L410 437Z"/>
+  </mask></defs><rect width="715" height="519" fill="white" mask="url(#cabinet)"/>
+</svg>

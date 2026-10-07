@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1188" height="954" viewBox="0 0 1188 954">
+  <defs><mask id="panels" maskUnits="userSpaceOnUse"><rect width="1188" height="954" fill="black"/>
+    <path fill="white" d="M184 184H199V404H184Z M201 184H324V404H201Z M326 184H448V404H326Z M450 184H573V404H450Z M576 184H698V404H576Z M701 184H823V404H701Z M826 184H948V404H826Z M951 184H1073V404H951Z M1076 184H1080V404H1076Z"/>
+    <!-- Preserve the pendant lamps and suspension wires in front of the doors. -->
+    <path fill="black" d="M970 180H975V341H970Z M1001 180H1006V286H1001Z M938 376Q942 348 961 342Q973 339 987 349L1005 376Z M964 321Q966 294 987 290Q1009 283 1027 302L1046 322Z"/>
+    <ellipse cx="974" cy="377" rx="15" ry="16" fill="black"/><ellipse cx="1005" cy="323" rx="16" ry="18" fill="black"/>
+  </mask></defs><rect width="1188" height="954" fill="white" mask="url(#panels)"/>
+</svg>

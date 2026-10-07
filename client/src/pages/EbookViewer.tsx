@@ -306,6 +306,7 @@ function CategoryNavigation({
   onMaterialTypeClick,
   onGroupClick,
   onLineClick,
+  onDirectLineClick,
   editEnabled,
   onEditEnabledChange,
   onAdd,
@@ -327,6 +328,7 @@ function CategoryNavigation({
   onMaterialTypeClick: (mt: string) => void;
   onGroupClick: (group: string) => void;
   onLineClick: (line: string) => void;
+  onDirectLineClick: (context: TreeContext) => void;
   editEnabled: boolean;
   onEditEnabledChange: (enabled: boolean) => void;
   onAdd: (level: TreeLevel, context: TreeContext) => void;
@@ -363,13 +365,21 @@ function CategoryNavigation({
     );
   }
 
-  const tools = (level: TreeLevel, context: TreeContext, name: string, childLevel?: TreeLevel) => editEnabled ? (
+  const tools = (level: TreeLevel, context: TreeContext, name: string, childLevel?: TreeLevel) => {
+    if (level === 'brand' && context.categoryId === 3 && context.brand === '영림') {
+      const brand = categories.find(cat => cat.id === context.categoryId)?.brands.find(item => item.name === context.brand);
+      const material = brand?.materialTypes?.find(item => item.name === '인테리어필름') ?? brand?.materialTypes?.[0];
+      const group = material?.groups.find(item => item.name === '인테리어필름&시트') ?? material?.groups[0];
+      if (material && group) { childLevel = 'line'; context = { ...context, materialType: material.name, group: group.name }; }
+    }
+    return editEnabled ? (
     <span className="flex shrink-0 items-center gap-0.5">
       {childLevel && <button type="button" onClick={(event) => { event.stopPropagation(); onAdd(childLevel, context); }} className="rounded p-1 text-slate-400 hover:bg-blue-100 hover:text-blue-700" title={`${name} 아래에 추가`} aria-label={`${name} 아래에 ${childLevel} 추가`}><Plus className="h-3.5 w-3.5" /></button>}
       <button type="button" onClick={(event) => { event.stopPropagation(); onEdit(level, context, name); }} className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700" title="이름 변경" aria-label={`${name} 이름 변경`}><Pencil className="h-3.5 w-3.5" /></button>
       <button type="button" onClick={(event) => { event.stopPropagation(); onDelete(level, context, name); }} className="rounded p-1 text-slate-400 hover:bg-red-100 hover:text-red-600" title="삭제" aria-label={`${name} 삭제`}><Trash2 className="h-3.5 w-3.5" /></button>
     </span>
   ) : null;
+  };
 
   // 펼친 상태: 사이드바에서 직접 전체 구조 관리
   return (
@@ -408,7 +418,12 @@ function CategoryNavigation({
                     {/* 소재 유형 목록 (실크/합지 등) */}
                     {expandedBrand === `${cat.id}:${brand.name}` && (
                       <div className="ml-2 mt-1 space-y-1">
-                        {(brand.materialTypes ?? []).map((mt) => (
+                        {cat.id === 3 && brand.name === '영림' ? (brand.materialTypes ?? []).flatMap((mt) => mt.groups.flatMap((group) => group.lines.map((line) => (
+                          <div key={`${mt.name}:${group.name}:${line}`} className={cn('flex items-center rounded pr-1', selectedLine === line && selectedMaterialType === mt.name && selectedGroup === group.name ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent')}>
+                            <button onClick={() => onDirectLineClick({ categoryId: cat.id, brand: brand.name, materialType: mt.name, group: group.name, line })} className="min-w-0 flex-1 truncate px-3 py-2 text-left text-xs">{line}</button>
+                            {tools('line', { categoryId: cat.id, brand: brand.name, materialType: mt.name, group: group.name, line }, line)}
+                          </div>
+                        )))) : (brand.materialTypes ?? []).map((mt) => (
                           <div key={mt.name}>
                             <div className={cn('flex items-center rounded pr-1', selectedMaterialType === mt.name ? 'bg-secondary text-secondary-foreground' : 'text-gray-500 hover:bg-gray-100')}><button onClick={() => onMaterialTypeClick(mt.name)} className="flex min-w-0 flex-1 items-center justify-between px-3 py-2 text-left text-xs"><span className="truncate">{mt.name}</span>{expandedMaterialType === `${brand.name}:${mt.name}` ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}</button>{tools('materialType', { categoryId: cat.id, brand: brand.name, materialType: mt.name }, mt.name, 'group')}</div>
                             {/* 제품군 목록 */}
@@ -1195,6 +1210,7 @@ export default function EbookViewer() {
             onMaterialTypeClick={handleMaterialTypeClick}
             onGroupClick={handleGroupClick}
             onLineClick={handleLineClick}
+            onDirectLineClick={selectTreeContext}
             editEnabled={categoryEditEnabled}
             onEditEnabledChange={setCategoryEditEnabled}
             onAdd={(level, context) => openSidebarTreeEditor('add', level, context)}
@@ -1287,7 +1303,7 @@ export default function EbookViewer() {
               <div className="border-b border-border bg-card p-4 md:p-8">
                 <p className="mb-2 text-xs tracking-widest text-muted-foreground">MATERIAL COLLECTION</p>
                 <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">공간의 바탕을 고르다.</h1>
-                <p className="mt-2 mb-6 text-sm text-muted-foreground">{[currentCategory?.name, selectedBrand, selectedMaterialType, selectedGroup, selectedLine].filter(Boolean).join(' / ')}</p>
+                <p className="mt-2 mb-6 text-sm text-muted-foreground">{(selectedCategory === 3 && selectedBrand === '영림' ? [currentCategory?.name, selectedBrand, selectedLine] : [currentCategory?.name, selectedBrand, selectedMaterialType, selectedGroup, selectedLine]).filter(Boolean).join(' / ')}</p>
                 {/* Search Bar */}
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
@@ -1645,11 +1661,11 @@ export default function EbookViewer() {
     </MainLayout>
 
     <Dialog open={Boolean(treeDialog)} onOpenChange={(open) => { if (!open) setTreeDialog(null); }}>
-      <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{treeDialog?.mode === 'add' ? '하위 카테고리 추가' : '카테고리 이름 편집'}</DialogTitle></DialogHeader><div className="space-y-2 py-3"><Label htmlFor="tree-name">{treeDialog ? levelLabel[treeDialog.level] : ''} 이름</Label><Input id="tree-name" autoFocus value={treeName} onChange={(event) => setTreeName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') saveTreeItem(); }} placeholder="이름을 입력하세요" /><p className="text-xs text-muted-foreground">현재 위치: {currentCategory?.name}{selectedBrand ? ` > ${selectedBrand}` : ''}{selectedMaterialType ? ` > ${selectedMaterialType}` : ''}{selectedGroup ? ` > ${selectedGroup}` : ''}</p></div><div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setTreeDialog(null)}>취소</Button><Button onClick={saveTreeItem} disabled={!treeName.trim()}>저장</Button></div></DialogContent>
+      <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{treeDialog?.mode === 'add' ? '하위 카테고리 추가' : '카테고리 이름 편집'}</DialogTitle></DialogHeader><div className="space-y-2 py-3"><Label htmlFor="tree-name">{treeDialog ? levelLabel[treeDialog.level] : ''} 이름</Label><Input id="tree-name" autoFocus value={treeName} onChange={(event) => setTreeName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') saveTreeItem(); }} placeholder="이름을 입력하세요" /><p className="text-xs text-muted-foreground">현재 위치: {[currentCategory?.name, selectedBrand, ...(selectedCategory === 3 && selectedBrand === '영림' ? [] : [selectedMaterialType, selectedGroup])].filter(Boolean).join(' > ')}</p></div><div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setTreeDialog(null)}>취소</Button><Button onClick={saveTreeItem} disabled={!treeName.trim()}>저장</Button></div></DialogContent>
     </Dialog>
 
     <Dialog open={sampleEditorOpen} onOpenChange={setSampleEditorOpen}>
-      <DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle>{editingSampleId ? '샘플 편집' : '새 샘플 추가'}</DialogTitle></DialogHeader><div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-muted-foreground">{currentCategory?.name} &gt; {selectedBrand} &gt; {selectedMaterialType} &gt; {selectedGroup} &gt; <strong className="text-foreground">{selectedLine}</strong></div><div className="grid gap-4 py-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="inline-product-no">품번 *</Label><Input id="inline-product-no" value={sampleForm.productNo} onChange={(event) => setSampleForm({ ...sampleForm, productNo: event.target.value })} /></div><div className="space-y-2"><Label htmlFor="inline-name">제품명 *</Label><Input id="inline-name" value={sampleForm.name} onChange={(event) => setSampleForm({ ...sampleForm, name: event.target.value })} /></div><div className="space-y-2"><Label htmlFor="inline-color">색상</Label><Input id="inline-color" value={sampleForm.color} onChange={(event) => setSampleForm({ ...sampleForm, color: event.target.value })} placeholder="예: 미스트 그레이지" /></div><div className="space-y-2"><Label htmlFor="inline-pattern">패턴</Label><Input id="inline-pattern" value={sampleForm.pattern} onChange={(event) => setSampleForm({ ...sampleForm, pattern: event.target.value })} placeholder="예: 스타코" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="inline-specs">특징·사양</Label><Input id="inline-specs" value={sampleForm.specs} onChange={(event) => setSampleForm({ ...sampleForm, specs: event.target.value })} placeholder="쉼표로 구분" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="inline-image">이미지 경로</Label><Input id="inline-image" value={sampleForm.image} onChange={(event) => setSampleForm({ ...sampleForm, image: event.target.value })} placeholder="/images/wallpaper/example.jpg" /></div></div><div className="flex justify-between gap-2"><div>{editingSampleId && <Button variant="ghost" className="text-destructive" onClick={() => { if (window.confirm('이 샘플을 삭제하시겠습니까?')) { deleteCatalogSample(editingSampleId); setCatalogRevision((value) => value + 1); setSampleEditorOpen(false); } }}><Trash2 className="mr-2 h-4 w-4" />삭제</Button>}</div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setSampleEditorOpen(false)}>취소</Button><Button onClick={saveSampleInline} disabled={!sampleForm.productNo.trim() || !sampleForm.name.trim()}>저장</Button></div></div></DialogContent>
+      <DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle>{editingSampleId ? '샘플 편집' : '새 샘플 추가'}</DialogTitle></DialogHeader><div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-muted-foreground">{[currentCategory?.name, selectedBrand, ...(selectedCategory === 3 && selectedBrand === '영림' ? [] : [selectedMaterialType, selectedGroup])].filter(Boolean).join(' > ')} &gt; <strong className="text-foreground">{selectedLine}</strong></div><div className="grid gap-4 py-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="inline-product-no">품번 *</Label><Input id="inline-product-no" value={sampleForm.productNo} onChange={(event) => setSampleForm({ ...sampleForm, productNo: event.target.value })} /></div><div className="space-y-2"><Label htmlFor="inline-name">제품명 *</Label><Input id="inline-name" value={sampleForm.name} onChange={(event) => setSampleForm({ ...sampleForm, name: event.target.value })} /></div><div className="space-y-2"><Label htmlFor="inline-color">색상</Label><Input id="inline-color" value={sampleForm.color} onChange={(event) => setSampleForm({ ...sampleForm, color: event.target.value })} placeholder="예: 미스트 그레이지" /></div><div className="space-y-2"><Label htmlFor="inline-pattern">패턴</Label><Input id="inline-pattern" value={sampleForm.pattern} onChange={(event) => setSampleForm({ ...sampleForm, pattern: event.target.value })} placeholder="예: 스타코" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="inline-specs">특징·사양</Label><Input id="inline-specs" value={sampleForm.specs} onChange={(event) => setSampleForm({ ...sampleForm, specs: event.target.value })} placeholder="쉼표로 구분" /></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="inline-image">이미지 경로</Label><Input id="inline-image" value={sampleForm.image} onChange={(event) => setSampleForm({ ...sampleForm, image: event.target.value })} placeholder="/images/wallpaper/example.jpg" /></div></div><div className="flex justify-between gap-2"><div>{editingSampleId && <Button variant="ghost" className="text-destructive" onClick={() => { if (window.confirm('이 샘플을 삭제하시겠습니까?')) { deleteCatalogSample(editingSampleId); setCatalogRevision((value) => value + 1); setSampleEditorOpen(false); } }}><Trash2 className="mr-2 h-4 w-4" />삭제</Button>}</div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setSampleEditorOpen(false)}>취소</Button><Button onClick={saveSampleInline} disabled={!sampleForm.productNo.trim() || !sampleForm.name.trim()}>저장</Button></div></div></DialogContent>
     </Dialog>
 
     {/* PDF 미리보기 Dialog */}

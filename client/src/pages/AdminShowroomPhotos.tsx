@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { deleteProductImage, uploadProductImage, useProductImages } from '@/hooks/useProductImage';
-import { ROOM_OPTIONS, SHOWROOM_PHOTO_SLOTS } from '@/lib/showroom';
+import { BUILTIN_SHOWROOM_PHOTOS, ROOM_OPTIONS, SHOWROOM_PHOTO_SLOTS } from '@/lib/showroom';
 import { ImagePlus, Loader2, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 
@@ -39,7 +39,7 @@ export default function AdminShowroomPhotos() {
     try {
       await deleteProductImage(slotId);
       await refresh();
-      setNotice(`${label} 사진을 제거했습니다.`);
+      setNotice(BUILTIN_SHOWROOM_PHOTOS[slotId] ? `${label} 교체 사진을 제거하고 기본 사진으로 복원했습니다.` : `${label} 사진을 제거했습니다.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '쇼룸 사진을 제거하지 못했습니다.');
     } finally {
@@ -65,7 +65,7 @@ export default function AdminShowroomPhotos() {
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h3 className="text-lg font-semibold">쇼룸 사진 관리</h3>
-        <p className="mt-1 text-sm text-muted-foreground">거실·안방·주방·욕실의 미리보기 사진을 등록하세요. 각 공간에 최대 3장을 둘 수 있으며 방문자는 등록된 사진을 골라 자재를 적용합니다.</p>
+        <p className="mt-1 text-sm text-muted-foreground">거실·안방·주방·욕실·현관의 미리보기 사진을 등록하세요. 각 공간에 최대 3장을 둘 수 있습니다. 기본 사진을 교체하면 해당 사진의 사전 알파 영역은 비활성화되고 수동 영역 지정을 사용합니다.</p>
       </div>
       {error && <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       {notice && <p role="status" className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
@@ -75,14 +75,15 @@ export default function AdminShowroomPhotos() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {SHOWROOM_PHOTO_SLOTS.filter((slot) => slot.roomId === room.id).map((slot) => {
               const image = images[slot.id];
+              const builtin = BUILTIN_SHOWROOM_PHOTOS[slot.id];
               const isBusy = busySlot === slot.id;
               return (
                 <Card key={slot.id} className="overflow-hidden">
                   <div className="aspect-[4/3] bg-slate-100">
-                    {image ? <img src={image.thumbUrl} alt={`${slot.label} 쇼룸 사진`} className="h-full w-full object-cover" /> : <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground"><ImagePlus className="h-8 w-8" /><span className="text-sm">사진 미등록</span></div>}
+                    {image || builtin ? <img src={image?.thumbUrl ?? builtin.image} alt={`${slot.label} 쇼룸 사진`} className="h-full w-full object-cover" /> : <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground"><ImagePlus className="h-8 w-8" /><span className="text-sm">사진 미등록</span></div>}
                   </div>
                   <CardContent className="space-y-3 p-4">
-                    <div className="flex items-center justify-between"><p className="font-medium">{slot.label}</p><Badge variant={image ? 'default' : 'outline'}>{image ? '사용 중' : '비어 있음'}</Badge></div>
+                    <div className="flex items-center justify-between"><p className="font-medium">{builtin?.label ?? slot.label}</p><Badge variant={image ? 'default' : 'outline'}>{image ? '사용 중' : builtin ? '기본 사진' : '비어 있음'}</Badge></div>
                     <div className="flex gap-2">
                       <Button className="flex-1" size="sm" disabled={isBusy} onClick={() => inputRefs.current[slot.id]?.click()}>
                         {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}

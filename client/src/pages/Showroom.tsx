@@ -4,10 +4,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getCatalogSamples, type Sample } from '@/data/sampleData';
 import { getProductThumb, getProductPatternSrc, useProductImages } from '@/hooks/useProductImage';
 import { MaterialPatternImage } from '@/components/MaterialPatternImage';
+import { ShowroomFilmLayer } from '@/components/ShowroomFilmLayer';
+import { readShowroomSelections } from '@/lib/showroomSelections';
 import {
   ROOM_OPTIONS,
+  BUILTIN_SHOWROOM_PHOTOS,
   SHOWROOM_PHOTO_SLOTS,
   getRoomSurfaces,
+  getShowroomPhotoSurfaces,
   isSampleCompatibleWithSurface,
   sortPointsClockwise,
   type RoomType,
@@ -38,15 +42,7 @@ interface AppliedLayer {
   sampleNo: string;
   textureUrl: string;
   points: ShowroomPoint[];
-}
-
-function getSelectedSampleIds(): string[] {
-  try {
-    const saved = JSON.parse(localStorage.getItem('selectedProducts') || '[]');
-    return Array.isArray(saved) ? saved.filter((value): value is string => typeof value === 'string') : [];
-  } catch {
-    return [];
-  }
+  maskUrl?: string;
 }
 
 export default function Showroom() {
@@ -54,6 +50,7 @@ export default function Showroom() {
   const [room, setRoom] = useState<RoomType>('living');
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
   const [selectedSamples, setSelectedSamples] = useState<Sample[]>([]);
+  const [savedSources, setSavedSources] = useState({ selected: new Set<string>(), liked: new Set<string>() });
   const [activeSurface, setActiveSurface] = useState<SurfaceType>('wall');
   const [activeSampleId, setActiveSampleId] = useState<string | null>(null);
   const [draftPoints, setDraftPoints] = useState<ShowroomPoint[]>([]);
@@ -65,16 +62,28 @@ export default function Showroom() {
   const { images, isLoading: isImagesLoading } = useProductImages();
 
   useEffect(() => {
-    const ids = new Set(getSelectedSampleIds());
-    setSelectedSamples(getCatalogSamples().filter((sample) => ids.has(sample.id)));
+    const refresh = () => {
+      const sources = readShowroomSelections(localStorage);
+      setSavedSources(sources);
+      setSelectedSamples(getCatalogSamples().filter(sample => sources.all.has(sample.id)));
+    };
+    refresh();
+    window.addEventListener('storage', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener('focus', refresh);
+    };
   }, []);
 
-  const surfaces = getRoomSurfaces(room);
+  const surfaces = getShowroomPhotoSurfaces(room, activePhotoId);
   const activeSurfaceInfo = surfaces.find((surface) => surface.id === activeSurface) ?? surfaces[0];
   const roomPhotoSlots = SHOWROOM_PHOTO_SLOTS.filter((slot) => slot.roomId === room);
   const activePhoto = roomPhotoSlots.find((slot) => slot.id === activePhotoId) ?? null;
-  const photoUrl = activePhoto ? images[activePhoto.id]?.originalUrl ?? null : null;
-  const photoName = activePhoto?.label ?? '';
+  const builtinPhoto = activePhoto ? BUILTIN_SHOWROOM_PHOTOS[activePhoto.id] : undefined;
+  const photoUrl = activePhoto ? images[activePhoto.id]?.originalUrl ?? builtinPhoto?.image ?? null : null;
+  const photoName = builtinPhoto?.label ?? activePhoto?.label ?? '';
+  const activeMask = activePhoto && !images[activePhoto.id] ? builtinPhoto?.masks[activeSurface] : undefined;
   const visibleLayers = showAllChannels ? layers : layers.filter((layer) => layer.surface === activeSurface);
   const compatibleSamples = useMemo(
     () => selectedSamples.filter((sample) => isSampleCompatibleWithSurface(sample, activeSurface)),
@@ -83,14 +92,29 @@ export default function Showroom() {
   const activeSample = compatibleSamples.find((sample) => sample.id === activeSampleId) ?? compatibleSamples[0] ?? null;
 
   useEffect(() => {
+    if (!surfaces.some(surface => surface.id === activeSurface)) {
+      setActiveSurface(surfaces[0].id);
+      setDraftPoints([]);
+    }
+  }, [room, activePhotoId, activeSurface]);
+
+  useEffect(() => {
+    // A server override can arrive after the built-in photo has already rendered.
+    // Regions belong to the exact photo, never carry them over to a replacement.
+    setLayers([]);
+    setDraftPoints([]);
+    setError('');
+  }, [photoUrl]);
+
+  useEffect(() => {
     if (!compatibleSamples.some((sample) => sample.id === activeSampleId)) {
       setActiveSampleId(compatibleSamples[0]?.id ?? null);
     }
   }, [activeSampleId, compatibleSamples]);
 
   useEffect(() => {
-    if (roomPhotoSlots.some((slot) => slot.id === activePhotoId && images[slot.id])) return;
-    const available = roomPhotoSlots.find((slot) => images[slot.id]);
+    if (roomPhotoSlots.some((slot) => slot.id === activePhotoId && (images[slot.id] || BUILTIN_SHOWROOM_PHOTOS[slot.id]))) return;
+    const available = roomPhotoSlots.find((slot) => images[slot.id] || BUILTIN_SHOWROOM_PHOTOS[slot.id]);
     setActivePhotoId(available?.id ?? null);
   }, [activePhotoId, images, roomPhotoSlots]);
 
@@ -98,13 +122,14 @@ export default function Showroom() {
     setRoom(nextRoom);
     const firstSurface = getRoomSurfaces(nextRoom)[0];
     setActiveSurface(firstSurface.id);
-    const firstAvailablePhoto = SHOWROOM_PHOTO_SLOTS.find((slot) => slot.roomId === nextRoom && images[slot.id]);
+    const firstAvailablePhoto = SHOWROOM_PHOTO_SLOTS.find((slot) => slot.roomId === nextRoom && (images[slot.id] || BUILTIN_SHOWROOM_PHOTOS[slot.id]));
     setActivePhotoId(firstAvailablePhoto?.id ?? null);
     setDraftPoints([]);
     setLayers([]);
   };
 
   const addPoint = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (activeMask) return;
     if (!photoUrl || !activeSample) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const point = {
@@ -130,6 +155,18 @@ export default function Showroom() {
   };
 
   const removeLayer = (id: string) => setLayers((current) => current.filter((layer) => layer.id !== id));
+  const applyMaskedSample = () => {
+    if (!activeMask || !activeSample) return;
+    const textureUrl = getProductPatternSrc(activeSample.id, activeSample.image);
+    if (!textureUrl) { setError('이 자재에 등록된 이미지가 없습니다. 이미지가 있는 필름을 선택하세요.'); return; }
+    setError('');
+    setLayers(current => [...current.filter(layer => layer.surface !== activeSurface), {
+      id: crypto.randomUUID(), surface: activeSurface, surfaceLabel: activeSurfaceInfo.label,
+      sampleId: activeSample.id, sampleName: activeSample.name, sampleNo: activeSample.productNo,
+      textureUrl, points: [], maskUrl: activeMask,
+    }]);
+    setShowApplied(true);
+  };
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -165,15 +202,16 @@ export default function Showroom() {
           <div className="mb-4 grid gap-2 sm:grid-cols-3">
             {roomPhotoSlots.map((slot) => {
               const photo = images[slot.id];
+              const builtin = BUILTIN_SHOWROOM_PHOTOS[slot.id];
               return (
-                <button key={slot.id} type="button" disabled={!photo} onClick={() => { setActivePhotoId(slot.id); setDraftPoints([]); setLayers([]); }} className={cn('overflow-hidden rounded-xl border text-left transition-colors disabled:cursor-not-allowed disabled:opacity-55', activePhotoId === slot.id ? 'border-blue-600 ring-2 ring-blue-600' : 'hover:border-blue-300')}>
-                  <div className="aspect-[4/3] bg-slate-100">{photo ? <img src={photo.thumbUrl} alt={`${slot.label} 미리보기`} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-muted-foreground">사진 준비 중</div>}</div>
-                  <div className="flex items-center justify-between gap-2 px-3 py-2"><span className="text-sm font-medium">{slot.label}</span>{activePhotoId === slot.id && <Check className="h-4 w-4 text-blue-600" />}</div>
+                <button key={slot.id} type="button" disabled={!photo && !builtin} onClick={() => { setActivePhotoId(slot.id); setDraftPoints([]); setLayers([]); setError(''); }} className={cn('overflow-hidden rounded-xl border text-left transition-colors disabled:cursor-not-allowed disabled:opacity-55', activePhotoId === slot.id ? 'border-blue-600 ring-2 ring-blue-600' : 'hover:border-blue-300')}>
+                  <div className="aspect-[4/3] bg-slate-100">{photo || builtin ? <img src={photo?.thumbUrl ?? builtin.image} alt={`${slot.label} 미리보기`} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-muted-foreground">사진 준비 중</div>}</div>
+                  <div className="flex items-center justify-between gap-2 px-3 py-2"><span className="text-sm font-medium">{builtin?.label ?? slot.label}</span>{activePhotoId === slot.id && <Check className="h-4 w-4 text-blue-600" />}</div>
                 </button>
               );
             })}
           </div>
-          {!roomPhotoSlots.some((slot) => images[slot.id]) && (
+          {!roomPhotoSlots.some((slot) => images[slot.id] || BUILTIN_SHOWROOM_PHOTOS[slot.id]) && (
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed bg-slate-50 px-4 py-3">
               <p className="text-sm text-muted-foreground">{isImagesLoading ? '쇼룸 사진을 불러오고 있습니다…' : `${ROOM_OPTIONS.find((option) => option.id === room)?.label} 사진이 아직 등록되지 않았습니다.`}</p>
               <Button size="sm" variant="outline" onClick={() => navigate('/admin?tab=showroom')}>사진 관리</Button>
@@ -216,15 +254,18 @@ export default function Showroom() {
                     aria-label="샘플 적용 영역 지정"
                   >
                     <img src={photoUrl} alt={`${room} 인테리어`} className="block max-h-[72vh] max-w-full select-none object-contain" draggable={false} />
+                    {showApplied && visibleLayers.filter(layer => layer.maskUrl).map(layer => (
+                      <ShowroomFilmLayer key={layer.id} photoUrl={photoUrl} maskUrl={layer.maskUrl!} textureUrl={layer.textureUrl} label={layer.surfaceLabel} opacity={opacity} />
+                    ))}
                     <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                       <defs>
-                        {layers.map((layer) => (
+                        {layers.filter(layer => !layer.maskUrl).map((layer) => (
                           <pattern key={layer.id} id={`texture-${layer.id}`} patternUnits="userSpaceOnUse" width="24" height="24">
                             <image href={layer.textureUrl} x="0" y="0" width="24" height="24" preserveAspectRatio="xMidYMid slice" />
                           </pattern>
                         ))}
                       </defs>
-                      {showApplied && visibleLayers.map((layer) => (
+                      {showApplied && visibleLayers.filter(layer => !layer.maskUrl).map((layer) => (
                         <polygon
                           key={layer.id}
                           points={layer.points.map((point) => `${point.x},${point.y}`).join(' ')}
@@ -242,12 +283,14 @@ export default function Showroom() {
                         </>
                       )}
                     </svg>
-                    {activeSample && draftPoints.length === 0 && (
+                    {activeSample && !activeMask && draftPoints.length === 0 && (
                       <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-xs font-medium text-white">
                         <MousePointer2 className="h-3.5 w-3.5" />첫 번째 모서리를 누르세요
                       </div>
                     )}
                   </div>
+                  {activeMask && <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-blue-50 p-3"><p className="text-sm">{activeSurfaceInfo.label} 알파 영역 준비 완료 · 선택한 필름만 변경합니다.</p><Button disabled={!activeSample} onClick={applyMaskedSample}>{activeSurfaceInfo.label}에 필름 적용</Button></div>}
+                  {activePhoto && images[activePhoto.id] && builtinPhoto && <p className="text-xs text-muted-foreground">관리자가 교체한 사진입니다. 기존 사진용 알파 마스크는 사용하지 않으며 네 모서리로 적용 영역을 지정하세요.</p>}
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="max-w-[50%] truncate text-sm text-muted-foreground">{photoName}</span>
                     <div className="flex flex-wrap gap-2">
@@ -271,12 +314,12 @@ export default function Showroom() {
               <CardContent className="p-4">
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div><p className="font-semibold">{activeSurfaceInfo.label} 샘플</p><p className="text-xs text-muted-foreground">{activeSurfaceInfo.materialLabel}</p></div>
-                  <Badge variant="outline">선택 {compatibleSamples.length}</Badge>
+                  <Badge variant="outline">선택·찜 {compatibleSamples.length}</Badge>
                 </div>
                 {compatibleSamples.length === 0 ? (
                   <div className="rounded-xl border border-dashed p-5 text-center">
                     <p className="text-sm font-medium">적용할 샘플이 없습니다</p>
-                    <p className="mt-1 text-xs text-muted-foreground">샘플북에서 {activeSurfaceInfo.materialLabel} 제품을 먼저 선택하세요.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">샘플북에서 {activeSurfaceInfo.materialLabel} 제품을 선택하거나 찜하세요.</p>
                     <Button size="sm" className="mt-3" onClick={() => navigate('/')}>샘플 선택하기</Button>
                   </div>
                 ) : (
@@ -294,7 +337,7 @@ export default function Showroom() {
                           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
                             {thumbnail ? <MaterialPatternImage src={thumbnail} alt={sample.name} className="h-full w-full" /> : <div className="flex h-full items-center justify-center"><ImagePlus className="h-5 w-5 text-muted-foreground" /></div>}
                           </div>
-                          <div className="min-w-0 flex-1"><p className="truncate text-xs font-mono text-muted-foreground">{sample.productNo}</p><p className="line-clamp-2 text-sm font-semibold">{sample.name}</p></div>
+                          <div className="min-w-0 flex-1"><p className="truncate text-xs font-mono text-muted-foreground">{sample.productNo}</p><p className="line-clamp-2 text-sm font-semibold">{sample.name}</p><div className="mt-1 flex gap-1">{savedSources.selected.has(sample.id) && <Badge variant="outline">선택</Badge>}{savedSources.liked.has(sample.id) && <Badge variant="secondary">찜</Badge>}</div></div>
                           {selected && <Check className="h-4 w-4 shrink-0 text-blue-600" />}
                         </button>
                       );
@@ -308,7 +351,7 @@ export default function Showroom() {
               <CardContent className="p-4">
                 <div className="mb-3 flex items-center justify-between gap-2"><div><p className="font-semibold">표면 채널별 적용</p><p className="text-xs text-muted-foreground">채널별 영역이 서로 독립적으로 유지됩니다.</p></div><Badge variant="secondary">전체 {layers.length}</Badge></div>
                 <Button className="mb-3 w-full" size="sm" variant="outline" onClick={() => setShowAllChannels((value) => !value)}>{showAllChannels ? '현재 채널만 미리보기' : '전체 채널 미리보기'}</Button>
-                {layers.length === 0 ? <p className="text-sm text-muted-foreground">현재 채널에서 사진 모서리 네 곳을 누르면 선택 샘플이 적용됩니다.</p> : (
+                {layers.length === 0 ? <p className="text-sm text-muted-foreground">{activeMask ? (room === 'kitchen' ? '필름을 선택하고 적용 버튼을 누르세요. 상부장과 하부장은 각각 다른 자재를 적용할 수 있습니다.' : '필름을 선택하고 적용 버튼을 누르세요. 가구문과 서라운드 몰딩에 함께 적용됩니다.') : '현재 채널에서 사진 모서리 네 곳을 누르면 선택 샘플이 적용됩니다.'}</p> : (
                   <div className="space-y-4">
                     {surfaces.map((surface) => {
                       const channelLayers = [...layers].reverse().filter((layer) => layer.surface === surface.id);
