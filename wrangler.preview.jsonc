@@ -3,6 +3,7 @@
   "name": "ebook-sample-book-preview",
   "main": "server/preview.ts",
   "compatibility_date": "2026-08-15",
+  "compatibility_flags": ["global_fetch_strictly_public"],
   "vars": {
     "APP_ORIGIN": "https://ebook-sample-book-preview.tubebluemoon.workers.dev",
     "ADMIN_EMAIL": "tubebluemoon@gmail.com"

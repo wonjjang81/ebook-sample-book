@@ -44,3 +44,16 @@
 6. 운영에서 화면/이미지 조회·미인증 변경 거부·관리자 로그인·로그아웃을 재확인한다. 실패 시 위 운영 버전으로 복귀하고 DB 복구는 필요한 경우에만 별도 검토한다.
 
 현재 실제 OAuth 로그인 검증은 미완료다. building-google-team-auth의 격리 로그인 검증 게이트에 따라 운영 전환을 보류한다.
+
+## 정식 릴리스 기준 및 기존 이미지 표시 추가
+
+사용자 요청에 따라 Preview의 UI/UX를 정식 배포판의 구현 기준으로 유지한다. 운영 반영 시에는 Preview 프록시가 아닌 기존 `server/sites.ts`와 운영 D1/R2 설정을 사용한다. 운영 주소 유지 방향을 안내했으며 주소 변경 자체는 수행하지 않았다.
+
+Preview 이미지 조회는 운영의 공개 이미지 API에만 읽기 전용으로 연결했다. 목록 및 검증된 원본/썸네일 경로만 허용하고 쿠키·인증 헤더·쿼리를 전달하지 않는다. 리디렉션도 따르지 않는다. 관리자 사용량 조회는 운영으로 전달하지 않는다. 업로드/삭제 차단과 별도 D1, R2 미바인딩을 유지한다.
+
+- 최신 Preview 버전: `7622be38-7e31-4748-b412-025fcc72396a`.
+- 실제 조회: 이미지 962개, 썸네일 GET 200, Preview 이미지 POST 403.
+- 타입 검사 통과, 전체 회귀 테스트 23개 파일/87개 통과.
+- 실제 브라우저에서 스케치 15053-1 카드 이미지 표시 확인. 캡처: `design-review-20261007/preview-server-images.png` (상위 작업공간).
+- Cloudflare의 동일 영역 Worker 공개 호출에 필요한 `global_fetch_strictly_public` 호환성 설정을 Preview에만 적용했다. 근거: https://developers.cloudflare.com/workers/observability/errors/ 및 https://developers.cloudflare.com/workers/runtime-apis/fetch/
+- 운영 Worker, DB, R2 객체, 관리자 로그인 설정은 변경하지 않았다. 정식 운영 배포는 격리 로그인 검증 후 진행한다.
