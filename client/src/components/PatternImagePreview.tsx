@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { createSeamlessTexture } from '@/lib/seamlessTexture';
 
 /** Small originals are tiled at their native pixel size, never stretched. */
 export function PatternImagePreview({ src, alt }: { src: string; alt: string }) {
-  const [imageSize, setImageSize] = useState<{ src: string; width: number; height: number } | null>(null);
+  const [imageSize, setImageSize] = useState<{ src: string; width: number; height: number; texture: string } | null>(null);
   const [viewport, setViewport] = useState({ width: window.innerWidth, height: window.innerHeight });
 
   useEffect(() => {
@@ -22,7 +23,7 @@ export function PatternImagePreview({ src, alt }: { src: string; alt: string }) 
       onClick={(event) => event.stopPropagation()}
       style={tiled ? {
         width, height,
-        backgroundImage: `url(${JSON.stringify(src)})`,
+        backgroundImage: `url(${JSON.stringify(size.texture)})`,
         backgroundRepeat: 'repeat',
         backgroundPosition: 'center',
         backgroundSize: `${size.width}px ${size.height}px`,
@@ -33,7 +34,7 @@ export function PatternImagePreview({ src, alt }: { src: string; alt: string }) 
         alt={alt}
         onLoad={(event) => {
           const image = event.currentTarget;
-          setImageSize({ src, width: image.naturalWidth, height: image.naturalHeight });
+          setImageSize({ src, width: image.naturalWidth, height: image.naturalHeight, texture: createSeamlessTexture(image) ?? src });
         }}
         style={tiled ? { width: 1, height: 1, opacity: 0 } : {
           maxWidth: width, maxHeight: height, objectFit: 'contain',

@@ -2,7 +2,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getCatalogSamples, type Sample } from '@/data/sampleData';
-import { getProductThumb, useProductImages } from '@/hooks/useProductImage';
+import { getProductThumb, getProductPatternSrc, useProductImages } from '@/hooks/useProductImage';
+import { MaterialPatternImage } from '@/components/MaterialPatternImage';
 import {
   ROOM_OPTIONS,
   SHOWROOM_PHOTO_SLOTS,
@@ -282,7 +283,7 @@ export default function Showroom() {
                   <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
                     {compatibleSamples.map((sample) => {
                       const selected = sample.id === activeSample?.id;
-                      const thumbnail = getProductThumb(sample.id, sample.image);
+                      const thumbnail = getProductPatternSrc(sample.id, sample.image);
                       return (
                         <button
                           key={sample.id}
@@ -291,7 +292,7 @@ export default function Showroom() {
                           className={cn('flex w-full items-center gap-3 rounded-xl border p-2 text-left transition-colors', selected ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600' : 'hover:border-blue-300')}
                         >
                           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
-                            {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center"><ImagePlus className="h-5 w-5 text-muted-foreground" /></div>}
+                            {thumbnail ? <MaterialPatternImage src={thumbnail} alt={sample.name} className="h-full w-full" /> : <div className="flex h-full items-center justify-center"><ImagePlus className="h-5 w-5 text-muted-foreground" /></div>}
                           </div>
                           <div className="min-w-0 flex-1"><p className="truncate text-xs font-mono text-muted-foreground">{sample.productNo}</p><p className="line-clamp-2 text-sm font-semibold">{sample.name}</p></div>
                           {selected && <Check className="h-4 w-4 shrink-0 text-blue-600" />}
@@ -315,7 +316,7 @@ export default function Showroom() {
                         <button type="button" onClick={() => { setActiveSurface(surface.id); setDraftPoints([]); }} className={cn('flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-sm font-semibold', activeSurface === surface.id ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50')}><span>{surface.label} 채널</span><Badge variant="outline">{channelLayers.length}</Badge></button>
                         {channelLayers.map((layer) => (
                           <div key={layer.id} className="flex items-center gap-2 rounded-lg border p-2">
-                            <img src={layer.textureUrl} alt="" className="h-10 w-10 rounded object-cover" />
+                            <MaterialPatternImage src={getProductPatternSrc(layer.sampleId, layer.textureUrl)} alt={layer.sampleName} className="h-10 w-10 shrink-0 rounded" />
                             <div className="min-w-0 flex-1"><p className="text-xs text-muted-foreground">{layer.sampleNo}</p><p className="truncate text-sm font-medium">{layer.sampleName}</p></div>
                             <button type="button" onClick={() => removeLayer(layer.id)} className="rounded p-2 text-muted-foreground hover:bg-red-50 hover:text-red-600" aria-label={`${layer.sampleName} 적용 삭제`}><Trash2 className="h-4 w-4" /></button>
                           </div>

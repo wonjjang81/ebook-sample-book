@@ -20,7 +20,8 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
 import { ensureCatalogCollections, getCatalogSamples, getManagedCategories, sampleMatchesCatalogSelection, saveCatalogSample, deleteCatalogSample, type EditableSample } from '@/data/sampleData';
-import { getProductThumb, useProductImages } from '@/hooks/useProductImage';
+import { getProductPatternSrc, useProductImages } from '@/hooks/useProductImage';
+import { MaterialPatternImage } from '@/components/MaterialPatternImage';
 import { PRODUCT_COLOR_FAMILIES, getProductColorInfo, getProductPattern, matchesMaterialGrade, type MaterialGradeFilter } from '@/lib/productMetadata';
 import { buildConstructionManagerSelection, parseConstructionManagerLaunchContext } from '@/lib/constructionManagerExport';
 
@@ -1398,17 +1399,17 @@ export default function EbookViewer() {
               <div className="space-y-3">
                 {getSelectedProductDetails().map((sample) => {
                   const sampleCategory = CATEGORIES.find(c => c.brands.some(b => b.name === sample.brand));
-                  const sampleImage = getProductThumb(sample.id, sample.image);
+                  const sampleImage = getProductPatternSrc(sample.id, sample.image);
                   return (
                     <div key={sample.id} className="border border-border rounded-lg p-4 bg-card hover:shadow-md transition-shadow">
                       <div className="flex gap-4">
                         {/* 이미지 */}
                         <div className="flex-shrink-0">
                           {sampleImage ? (
-                            <img
+                            <MaterialPatternImage
                               src={sampleImage}
                               alt={sample.name}
-                              className="w-24 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                              className="w-24 h-24 rounded cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => {
                                 if (sampleCategory) {
                                   setSelectedCategory(sampleCategory.id);
@@ -1539,17 +1540,17 @@ export default function EbookViewer() {
               <div className="space-y-3">
                 {getLikedProductDetails().map((sample) => {
                   const sampleCategory = CATEGORIES.find(c => c.brands.some(b => b.name === sample.brand));
-                  const sampleImage = getProductThumb(sample.id, sample.image);
+                  const sampleImage = getProductPatternSrc(sample.id, sample.image);
                   return (
                     <div key={sample.id} className="border border-border rounded-lg p-4 bg-card hover:shadow-md transition-shadow">
                       <div className="flex gap-4">
                         {/* 이미지 */}
                         <div className="flex-shrink-0">
                           {sampleImage ? (
-                            <img
+                            <MaterialPatternImage
                               src={sampleImage}
                               alt={sample.name}
-                              className="w-24 h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                              className="w-24 h-24 rounded cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => {
                                 if (sampleCategory) {
                                   setSelectedCategory(sampleCategory.id);

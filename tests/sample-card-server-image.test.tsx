@@ -34,8 +34,7 @@ describe('제품 목록 서버 이미지', () => {
       </ProductImagesProvider>,
     );
 
-    expect(html).toContain('/api/product-images/lohas-87493-1/v1/thumb');
+    expect(html).toContain('/api/product-images/lohas-87493-1/v1/original');
     expect(html).not.toContain('/images/default.jpg');
   });
 });
-

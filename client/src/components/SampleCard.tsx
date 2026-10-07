@@ -1,8 +1,8 @@
 import { Card, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Pencil } from 'lucide-react';
-import { getProductThumb, useProductImages } from '@/hooks/useProductImage';
-import { useState } from 'react';
+import { getProductPatternSrc, useProductImages } from '@/hooks/useProductImage';
+import { MaterialPatternImage } from './MaterialPatternImage';
 
 interface SampleCardProps {
   sample: {
@@ -34,8 +34,7 @@ export function SampleCard({
   className,
 }: SampleCardProps) {
   useProductImages();
-  const imageSrc = getProductThumb(sample.id, sample.image);
-  const [loadedImage, setLoadedImage] = useState<string | null>(null);
+  const imageSrc = getProductPatternSrc(sample.id, sample.image);
 
   return (
     <Card
@@ -52,21 +51,7 @@ export function SampleCard({
       {/* Image Container */}
       <div className="relative w-full aspect-square bg-muted overflow-hidden">
         {imageSrc ? (
-          <div className="w-full h-full" style={loadedImage === imageSrc ? {
-            backgroundImage: `url(${JSON.stringify(imageSrc)})`,
-            backgroundRepeat: 'repeat',
-            backgroundPosition: 'center',
-            backgroundSize: 'auto',
-          } : undefined}>
-          <img
-            src={imageSrc}
-            alt={sample.name}
-            loading="lazy"
-            decoding="async"
-            onLoad={() => setLoadedImage(imageSrc)}
-            className="w-full h-full object-none opacity-0"
-          />
-          </div>
+          <MaterialPatternImage src={imageSrc} alt={sample.name} className="w-full h-full" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
             <span className="text-sm">이미지 없음</span>

@@ -7,8 +7,11 @@ import { analyzeWhiteReference, findSimilarMaterials, type ImageSignature, type 
 import { ArrowLeft, Camera, CheckCircle2, ImagePlus, Loader2, RefreshCw, ScanSearch, ShieldCheck, Upload, SunMedium } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
+import { MaterialPatternImage } from '@/components/MaterialPatternImage';
+import { getProductPatternSrc, useProductImages } from '@/hooks/useProductImage';
 
 export default function PhotoMaterialFinder() {
+  useProductImages();
   const [, navigate] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -169,7 +172,7 @@ export default function PhotoMaterialFinder() {
                     <Card key={match.sample.id} className="overflow-hidden transition-shadow hover:shadow-lg">
                       <button className="w-full text-left" onClick={() => navigate(`/sample/${match.sample.id}`)}>
                         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                          <img src={match.sample.image} alt={match.sample.name} loading="lazy" className="h-full w-full object-cover transition-transform hover:scale-105" />
+                          <MaterialPatternImage src={getProductPatternSrc(match.sample.id, match.sample.image)} alt={match.sample.name} className="h-full w-full" />
                           <Badge className="absolute left-3 top-3">{index + 1}위</Badge>
                           <span className="absolute bottom-3 right-3 rounded-full bg-black/75 px-2.5 py-1 text-sm font-bold text-white">{match.score}%</span>
                         </div>

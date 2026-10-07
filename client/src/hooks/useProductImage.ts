@@ -41,6 +41,12 @@ export function getProductOrig(productId: string, defaultSrc = ''): string {
   return getServerProductImage(productId)?.originalUrl ?? getStoredOrig(productId) ?? withBasePath(defaultSrc);
 }
 
+/** Prefer the original texture, retaining legacy thumbnail-only uploads. */
+export function getProductPatternSrc(productId: string, defaultSrc = ''): string {
+  return getServerProductImage(productId)?.originalUrl
+    ?? getStoredOrig(productId) ?? getStoredThumb(productId) ?? withBasePath(defaultSrc);
+}
+
 function resizeImage(file: File, maxSize: number, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -171,4 +177,3 @@ export function useProductImages(): ProductImagesContextValue {
 export function setProductImageSnapshotForTests(snapshot: ProductImageSnapshot): void {
   serverImages = snapshot;
 }
-

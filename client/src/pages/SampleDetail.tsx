@@ -11,11 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { findSampleById, getCatalogLinemates, getCategoryName, ALL_SAMPLES } from '@/data/sampleData';
 import {
-  getStoredThumb, getStoredOrig, getProductThumb, getProductOrig, useProductImages,
+  getStoredThumb, getStoredOrig, getProductThumb, getProductOrig, getProductPatternSrc, useProductImages,
   uploadProductImage, deleteProductImage
 } from '@/hooks/useProductImage';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { PatternImagePreview } from '@/components/PatternImagePreview';
+import { MaterialPatternImage } from '@/components/MaterialPatternImage';
 import { getProductColorInfo, getProductPattern, getSimilarColorSamples } from '@/lib/productMetadata';
 
 export default function SampleDetail() {
@@ -209,10 +210,10 @@ export default function SampleDetail() {
               >
                 {/* 이미지 */}
                 {displayThumb ? (
-                  <img
-                    src={displayThumb}
+                  <MaterialPatternImage
+                    src={displayOrig || displayThumb}
                     alt={sample.name}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full"
                   />
                 ) : (
                   <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-slate-100 text-slate-500">
@@ -373,7 +374,7 @@ export default function SampleDetail() {
                   </p>
                   <div className="grid grid-cols-4 gap-1.5">
                     {relatedSamples.map((s) => {
-                      const relatedThumb = getProductThumb(s.id, s.image);
+                      const relatedThumb = getProductPatternSrc(s.id, s.image);
                       return (
                         <div
                           key={s.id}
@@ -381,16 +382,16 @@ export default function SampleDetail() {
                           className={cn(
                             'aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all',
                             s.id === sampleId
-                              ? 'border-blue-500 shadow-md scale-105'
+                              ? 'border-blue-500 shadow-md'
                               : 'border-transparent hover:border-gray-300'
                           )}
                           title={s.name}
                         >
                           {relatedThumb ? (
-                            <img
+                            <MaterialPatternImage
                               src={relatedThumb}
                               alt={s.name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full"
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-400"><ImagePlus className="h-4 w-4" /></div>
