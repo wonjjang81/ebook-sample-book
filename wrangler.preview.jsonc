@@ -5,6 +5,7 @@
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["global_fetch_strictly_public"],
   "vars": {
+    "GOOGLE_CLIENT_ID": "704292109577-qkp7bkmvd4lf764e8r2drhuna0invd2s.apps.googleusercontent.com",
     "APP_ORIGIN": "https://ebook-sample-book-preview.tubebluemoon.workers.dev",
     "ADMIN_EMAIL": "tubebluemoon@gmail.com"
   },
