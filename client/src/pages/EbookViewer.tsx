@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { ensureCatalogCollections, getCatalogSamples, getManagedCategories, sampleMatchesCatalogSelection, saveCatalogSample, deleteCatalogSample, type EditableSample } from '@/data/sampleData';
 import { getProductThumb, useProductImages } from '@/hooks/useProductImage';
 import { PRODUCT_COLOR_FAMILIES, getProductColorInfo, getProductPattern, matchesMaterialGrade, type MaterialGradeFilter } from '@/lib/productMetadata';
-import { buildConstructionManagerSelection } from '@/lib/constructionManagerExport';
+import { buildConstructionManagerSelection, parseConstructionManagerLaunchContext } from '@/lib/constructionManagerExport';
 
 // Mock 데이터 - 5단계 계층 구조 (카테고리 > 브랜드 > 소재유형 > 제품군 > 라인)
 const CATEGORIES = [
@@ -491,13 +491,18 @@ export default function EbookViewer() {
 
   // 프로젝트 로드
   useEffect(() => {
+    const constructionManagerContext = parseConstructionManagerLaunchContext(window.location.search);
     const saved = localStorage.getItem('projects');
     if (saved) {
       setProjects(JSON.parse(saved));
     }
-    const current = localStorage.getItem('currentProject');
+    const current = constructionManagerContext?.projectName || localStorage.getItem('currentProject');
     if (current) {
       setCurrentProject(current);
+      localStorage.setItem('currentProject', current);
+    }
+    if (constructionManagerContext) {
+      localStorage.setItem('constructionManagerContext', JSON.stringify(constructionManagerContext));
     }
     try {
       setSelectedProducts(new Set(JSON.parse(localStorage.getItem('selectedProducts') || '[]')));
@@ -853,6 +858,7 @@ export default function EbookViewer() {
       alert(error instanceof Error ? error.message : '건설매니저 연계 파일을 만들지 못했습니다.');
     }
   };
+
   const handleCategoryClick = (id: number) => {
     if (selectedCategory === id) {
       // 같은 카테고리 재클릭 시 펼침/접힘 토글만

@@ -9,6 +9,18 @@ export type ConstructionManagerSelectionProduct = {
 
 export type ProductNote = { location?: string; memo?: string }
 
+export type ConstructionManagerLaunchContext = {
+  canonicalProjectId: string
+  projectName: string
+}
+
+export function parseConstructionManagerLaunchContext(search: string): ConstructionManagerLaunchContext | null {
+  const params = new URLSearchParams(search)
+  const canonicalProjectId = params.get('cmProjectId')?.trim() ?? ''
+  const projectName = params.get('cmProjectName')?.trim() ?? ''
+  if (!canonicalProjectId || !projectName) return null
+  return { canonicalProjectId, projectName }
+}
 export function buildConstructionManagerSelection(
   projectName: string,
   products: ConstructionManagerSelectionProduct[],
@@ -17,6 +29,7 @@ export function buildConstructionManagerSelection(
   const name = projectName.trim()
   if (!name) throw new Error('프로젝트를 먼저 선택해 주세요.')
   if (products.length === 0) throw new Error('선택한 제품이 없습니다.')
+
   return {
     schema: 'samplebook-selection/v1' as const,
     exportedAt: new Date().toISOString(),
@@ -36,4 +49,3 @@ export function buildConstructionManagerSelection(
     })),
   }
 }
-
