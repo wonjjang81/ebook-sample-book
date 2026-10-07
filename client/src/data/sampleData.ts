@@ -1,4 +1,5 @@
 import { BEST_WALLPAPER_PRODUCTS } from './bestWallpaperData';
+import { YOUNGLIM_FILM_PRODUCTS } from './younglimFilmData';
 
 // 공유 데이터 파일 - EbookViewer와 SampleDetail에서 함께 사용
 
@@ -908,6 +909,20 @@ const BEST_WALLPAPER_SAMPLES: Sample[] = BEST_WALLPAPER_PRODUCTS.map(({ productN
 
 export function ensureCatalogCollections<T>(source: T): T {
   const next: any = structuredClone(source);
+  const film = next.find((category: any) => category.id === 3 || category.name === '필름');
+  if (film) {
+    let younglim = film.brands.find((brand: any) => brand.name === '영림');
+    if (!younglim) { younglim = { name: '영림', groups: [] }; film.brands.push(younglim); }
+    const lines = Array.from(new Set(YOUNGLIM_FILM_PRODUCTS.map((product) => product.design)));
+    let material = younglim.materialTypes?.find((item: any) => item.name === '인테리어필름');
+    if (!material) { material = { name: '인테리어필름', groups: [] }; younglim.materialTypes = [...(younglim.materialTypes ?? []), material]; }
+    const materialGroup = material.groups?.find((item: any) => item.name === '인테리어필름&시트');
+    if (materialGroup) materialGroup.lines = Array.from(new Set([...(materialGroup.lines ?? []), ...lines]));
+    else material.groups = [...(material.groups ?? []), { name: '인테리어필름&시트', lines }];
+    const group = younglim.groups?.find((item: any) => item.name === '인테리어필름&시트');
+    if (group) group.lines = Array.from(new Set([...(group.lines ?? []), ...lines]));
+    else younglim.groups = [...(younglim.groups ?? []), { name: '인테리어필름&시트', lines }];
+  }
   const wallpaper = next.find((category: any) => category.id === 1 || category.name === '도배');
   const gaenari = wallpaper?.brands.find((brand: any) => brand.name === '개나리');
   if (gaenari) {
@@ -1025,7 +1040,7 @@ export function sampleMatchesCatalogSelection(
   sample: Sample,
   selection: { group?: string; line?: string },
 ): boolean {
-  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드', '파사드', '리빙', '스케치', '디아망포티스', '디아망', '베스트'].includes(selection.group) && sample.collection !== selection.group) return false;
+  if (selection.group && ['프리모', '로하스+', '아트북', '광폭합지', '월가드', '파사드', '리빙', '스케치', '디아망포티스', '디아망', '베스트', '인테리어필름&시트'].includes(selection.group) && sample.collection !== selection.group) return false;
   if (selection.line && sample.line !== selection.line) return false;
   return true;
 }
@@ -1133,6 +1148,17 @@ export const MOCK_SAMPLES: Record<number, Sample[]> = {
     { id: '2-1', productNo: '82102-1', name: '세라믹 타일', brand: '세라믹', line: '클래식', specs: ['300x300', '광택'], image: 'https://via.placeholder.com/400x400?text=Tile+1' },
   ],
   3: [
+    ...YOUNGLIM_FILM_PRODUCTS.map((product): Sample => ({
+      id: `younglim-film-${product.productNo.replace('영림', 'yl').toLowerCase()}`,
+      productNo: product.productNo, name: product.name,
+      brand: '영림', materialType: '인테리어필름', collection: '인테리어필름&시트',
+      line: product.design, pattern: product.design,
+      specs: ['인테리어필름', ...(product.design === '미분류' ? [] : [product.design]), ...product.options],
+      image: product.image,
+      description: `영림 공식 인테리어필름&시트 카탈로그 등록 제품입니다. ${product.design === '미분류' ? '공식 디자인 분류가 지정되지 않은 제품입니다.' : `공식 디자인 분류: ${product.design}.`} 규격과 공급 조건은 주문 전에 확인하세요.`,
+      detailSections: [{ title: '공식 제품 정보', description: 'https://yl.co.kr/product/category?pi_categoryCode=080100\n화면의 색상은 실물과 다를 수 있습니다. 방염가능필름 표시는 방염 사양 선택 가능 여부이며 모든 출고 제품의 방염 인증을 의미하지 않습니다. 이미지 주소는 공식 공개 이미지이며 서버 원본으로 복사 저장하지 않았습니다.' }],
+      sourceLabel: '영림 토탈 인테리어 공식 제품 목록 (2026-10-07)',
+    })),
     { id: '3-1', productNo: '72102-1', name: '3M 데코 필름', brand: '3M', line: '프리미엄', specs: ['투명', '방수'], image: 'https://via.placeholder.com/400x400?text=Film+1' },
   ],
   4: [
